@@ -2,6 +2,9 @@
 datasets/
 rawdata/
 
+# Paper (generated outputs, not source)
+paper/
+
 # Python
 __pycache__/
 *.pyc
