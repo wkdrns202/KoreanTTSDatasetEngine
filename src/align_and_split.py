@@ -76,17 +76,18 @@ SKIP_PENALTY = 0.01          # Similarity penalty per skipped script line
 MATCH_THRESHOLD = 0.50       # Minimum adjusted similarity to accept a match
 CONSEC_FAIL_LIMIT = 10       # After N consecutive failures, try re-sync
 MAX_MERGE = 5                # Maximum consecutive segments to merge
-AUDIO_PAD_MS = 100           # Base padding in ms (generous to prevent tight starts)
-MIN_GAP_FOR_PAD_MS = 20      # If gap to neighbor < this, zero-pad on that edge
+AUDIO_PAD_MS = 50            # Base padding in ms (50ms proven optimal; 100ms caused bleed in Iter 4a)
+MIN_GAP_FOR_PAD_MS = 30      # If gap to neighbor < this, zero-pad on that edge (30ms for dense Korean)
+TAIL_EXTEND_MAX_MS = 400     # Max extra right padding to reach silence (prevents mid-speech cutoff)
 FADE_MS = 10                 # Fade-in/fade-out duration in ms
 # Stage 2: Post-processing / R6 Audio Envelope
 PREATTACK_SILENCE_MS = 400    # Pre-attack silence (ms) — generous for TTS training
 TAIL_SILENCE_MS = 730        # Tail silence (ms) — generous for TTS training
-SILENCE_THRESHOLD_DB = -40   # RMS threshold for silence detection (dB)
+SILENCE_THRESHOLD_DB = -65   # RMS threshold for silence detection (dB, matches recording noise floor)
 RMS_WINDOW_MS = 10           # RMS sliding window size (ms)
 PEAK_NORMALIZE_DB = -1.0     # Peak normalization target (dB)
 ONSET_SAFETY_MS = 30         # Pull onset back by this much to preserve consonant attacks
-OFFSET_SAFETY_MS = 20        # Extend offset by this much to preserve word-final sounds
+OFFSET_SAFETY_MS = 80        # Extend offset to preserve natural speech decay (80ms prevents bleed)
 
 # Set up logging
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -720,14 +721,22 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
                     else:
                         left_pad = AUDIO_PAD_MS
 
-                    # Right padding: check gap to next segment after merge
+                    # Right padding: adaptive extension to reach silence
+                    # Fixed 50ms pad can leave the extraction ending mid-speech
+                    # if Whisper's end timestamp falls before the speech naturally
+                    # decays. Extend up to TAIL_EXTEND_MAX_MS to reach silence,
+                    # capped by the next segment start to prevent actual bleed.
                     next_seg_idx = seg_idx + best_merge_count
                     if next_seg_idx < len(segments):
                         next_start_ms = int(segments[next_seg_idx]['start'] * 1000)
                         right_gap = next_start_ms - raw_end_ms
-                        right_pad = AUDIO_PAD_MS if right_gap >= MIN_GAP_FOR_PAD_MS else 0
+                        if right_gap < MIN_GAP_FOR_PAD_MS:
+                            right_pad = 0
+                        else:
+                            safe_limit = max(0, right_gap - 20)
+                            right_pad = min(TAIL_EXTEND_MAX_MS, safe_limit)
                     else:
-                        right_pad = AUDIO_PAD_MS
+                        right_pad = TAIL_EXTEND_MAX_MS
 
                     start_ms = max(0, raw_start_ms - left_pad)
                     end_ms = min(len(audio), raw_end_ms + right_pad)
@@ -888,6 +897,18 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, resume=True):
         })
 
     # ---- Save metadata ----
+    # When processing a single script, preserve existing entries for other scripts
+    if script_filter is not None and os.path.exists(METADATA_PATH):
+        script_prefix = f"Script_{script_filter}_"
+        existing_lines = []
+        with open(METADATA_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith(script_prefix):
+                    existing_lines.append(line)
+        logger.info(f"Preserving {len(existing_lines)} existing entries (non-{script_prefix}*)")
+        metadata_lines = existing_lines + metadata_lines
+
     # Sort metadata by filename for consistency
     metadata_lines.sort()
 

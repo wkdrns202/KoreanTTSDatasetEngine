@@ -500,7 +500,7 @@ R1 (Alignment Accuracy)      >= 95%   -- Whisper re-transcription matches ground
 R2 (Boundary Noise Clean)    >= 95%   -- No residual speech or artifacts at edges
 R3 (Combined Match Rate)     >= 95%   -- R1 AND R2 both pass per segment
 R4 (Metadata Complete)       = 95%   -- Every WAV should has metadata, only 5% or lessthan orphans are acceptable.
-R5 (Reproducible)            = YES    -- All parameters logged, deterministic
+R5 (Reproducible)            = TRUE   -- All parameters logged, deterministic
 
 -> ALL FIVE must be satisfied. No exceptions.
 ```

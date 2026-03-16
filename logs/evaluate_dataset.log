@@ -1,5 +1,66 @@
-2026-02-11 13:46:57,182 [INFO] Curation: 74/4270 segments below sim 0.8 (1.7%)
-2026-02-11 13:46:57,956 [INFO] Curation complete: 74 WAVs moved to quarantine
-2026-02-11 13:46:57,956 [INFO] Remaining: 4196 segments
-2026-02-11 13:46:57,956 [INFO] New R1: 95.23%
-2026-02-11 13:46:57,956 [INFO] New R3: 95.16%
+2026-02-20 22:09:09,763 [INFO] Loaded 2063 metadata entries
+2026-02-20 22:09:09,764 [INFO] Filtered to Script_5: 785 entries
+2026-02-20 22:09:10,535 [INFO] Found 785/785 WAV files
+2026-02-20 22:09:10,572 [INFO] Resumed from checkpoint: 4196 already processed
+2026-02-20 22:09:10,604 [INFO] [cuda] Loading Whisper model (medium)...
+2026-02-20 22:09:23,614 [INFO] Evaluating 3 segments...
+2026-02-20 22:09:29,423 [INFO] 
+==================================================
+2026-02-20 22:09:29,423 [INFO] TIER 2: Re-evaluating 206 failed segments with Whisper large + GT-prompt
+2026-02-20 22:09:29,423 [INFO] [cuda] Loading Whisper model (large)...
+2026-02-20 22:29:07,521 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 22:29:08,241 [WARNING] Tier 2 error on Script_2_0622.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 22:34:04,372 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 22:34:05,806 [WARNING] Tier 2 error on Script_2_0684.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 22:44:07,851 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 22:44:14,870 [WARNING] Tier 2 error on Script_2_0921.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 22:50:55,575 [INFO] Tier 2 checkpoint: 100/206, recovered 7
+2026-02-20 22:54:44,729 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 22:54:49,843 [WARNING] Tier 2 error on Script_2_1288.wav: cannot reshape tensor of 0 elements into shape [1, 0, 20, -1] because the unspecified dimension size -1 can be any value and is ambiguous
+2026-02-20 22:54:50,882 [WARNING] Tier 2 error on Script_2_1294.wav: cannot reshape tensor of 0 elements into shape [1, 0, 20, -1] because the unspecified dimension size -1 can be any value and is ambiguous
+2026-02-20 23:26:25,517 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:28:25,522 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:30:25,589 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:30:48,624 [WARNING] Tier 2 error on Script_4_0898.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 23:36:24,598 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:39:50,374 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:40:13,106 [WARNING] Tier 2 error on Script_4_0954.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 23:49:20,277 [WARNING] Whisper transcription timed out after 120s
+2026-02-20 23:50:00,024 [WARNING] Tier 2 error on Script_5_0101.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-02-20 23:54:28,070 [INFO] Tier 2 checkpoint: 200/206, recovered 13
+2026-02-20 23:59:23,721 [INFO] Tier 2 complete: 13/206 segments recovered
+2026-02-20 23:59:23,870 [INFO] Tier 2 recovered 13 segments
+2026-02-20 23:59:23,870 [INFO] 
+==================================================
+2026-02-20 23:59:23,870 [INFO] STAGE 4: Aggregating evaluation results...
+2026-02-20 23:59:23,890 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\logs\evaluation_report.json
+2026-02-20 23:59:23,933 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
+2026-02-20 23:59:23,934 [INFO] 
+============================================================
+2026-02-20 23:59:23,934 [INFO] EVALUATION COMPLETE
+2026-02-20 23:59:23,934 [INFO]   Total segments: 4199
+2026-02-20 23:59:23,934 [INFO]   R1 (Alignment Accuracy):    95.48%
+2026-02-20 23:59:23,934 [INFO]   R2 (Boundary Noise Clean):  100.0%
+2026-02-20 23:59:23,934 [INFO]   R6 (Audio Envelope):        99.93%
+2026-02-20 23:59:23,934 [INFO]   R3 (Combined Pass Rate):    95.4%
+2026-02-20 23:59:23,934 [INFO]   Pre-attack: min=400.0ms, mean=409.31ms
+2026-02-20 23:59:23,934 [INFO]   Tail silence: min=724.35ms, mean=737.99ms
+2026-02-20 23:59:23,934 [INFO]   Passed: 4006, Failed: 193
+2026-02-20 23:59:23,934 [INFO] 
+  Failure Type Breakdown:
+2026-02-20 23:59:23,934 [INFO]     Type A (Alignment Shift):    6
+2026-02-20 23:59:23,934 [INFO]     Type B (Merge/Split):        0
+2026-02-20 23:59:23,934 [INFO]     Type C (Boundary Noise):     0
+2026-02-20 23:59:23,934 [INFO]     Type D (Whisper Error):       184
+2026-02-20 23:59:23,934 [INFO]     Type E (Script Mismatch):    0
+2026-02-20 23:59:23,934 [INFO]     Type F (Envelope Violation): 3
+2026-02-20 23:59:23,935 [INFO] 
+  Per-Script Breakdown:
+2026-02-20 23:59:23,935 [INFO]     Script_1: 294/298 (98.66%)
+2026-02-20 23:59:23,935 [INFO]     Script_2: 1146/1254 (91.39%)
+2026-02-20 23:59:23,935 [INFO]     Script_3: 841/865 (97.23%)
+2026-02-20 23:59:23,935 [INFO]     Script_4: 949/990 (95.86%)
+2026-02-20 23:59:23,935 [INFO]     Script_5: 776/792 (97.98%)
+2026-02-20 23:59:23,935 [INFO] ============================================================
+2026-02-20 23:59:23,935 [INFO] 
+*** ALL REQUIREMENTS MET (>= 95%) — Ready for Stage 5 Finalization ***

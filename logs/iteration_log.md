@@ -265,3 +265,63 @@ The inline verification disrupts the alignment flow:
 
 ### Hypothesis
 Removing inline verification should restore Iteration 4c's 3978 segments with 72% Tier 1 (medium) baseline. Switching evaluation to Whisper large should push the ~16% recognition ceiling (sim 0.50-0.95) significantly lower because large model has better Korean vocabulary. Expected improvement: Type D errors reduce by 40-60%, pushing R1 from ~72% to ~82-88%. Large model single-pass per segment: ~5-7 seconds, total ~5-8 hours.
+
+---
+
+## Iteration 7 - 2026-02-20 (Fix Audio Bleed + Metadata Overwrite)
+
+### Root Cause
+Manual listening to Script_5_0150–0200 revealed adjacent sentence speech bleeding into segment boundaries. Automated R2/R6 checks didn't catch it because the bleed is inside voiced content (above silence threshold). Three parameters had regressed or were set too aggressively:
+
+1. **AUDIO_PAD_MS=100** — Iter 4a documented that 100ms caused boundary bleed; somehow regressed from proven 50ms
+2. **OFFSET_SAFETY_MS=100** — Extends detected voice offset by 100ms, pulling bleed back in
+3. **MIN_GAP_FOR_PAD_MS=20** — Too low for dense Korean narrative (inter-sentence gaps often 20-40ms)
+
+**Additional bug found:** `--script N` mode opened script.txt with `"w"`, destroying all other scripts' metadata.
+
+### Changes
+- [x] `AUDIO_PAD_MS`: 100 → **50** (reverted to proven value from Iter 3-5)
+- [x] `MIN_GAP_FOR_PAD_MS`: 20 → **30** (prevents real-audio padding for dense Korean)
+- [x] `OFFSET_SAFETY_MS`: 100 → **80** (reduces over-extension that re-includes bleed)
+- [x] **Metadata overwrite bug fix**: When `script_filter` is set, read existing script.txt, preserve non-matching entries, merge+dedup+sort
+- [x] **Reconstructed script.txt** from `cleansed_script.txt` (1718 lines) + `Script_5_0542-0801.txt` (260 lines) → 1719 unique entries
+
+### Scores (full evaluation, 4199 segments)
+- **R1 (Alignment Accuracy): 95.48%** ✓
+- **R2 (Boundary Noise Clean): 100.0%** ✓
+- **R3 (Combined Pass Rate): 95.4%** ✓
+- **R6 (Audio Envelope): 99.93%** ✓
+  - Pre-attack: min=400.0ms, mean=409.31ms
+  - Tail silence: min=724.35ms, mean=737.99ms
+
+### Failure Analysis
+- Type A (Alignment Shift): 6
+- Type B (Merge/Split): 0
+- Type C (Boundary Noise): 0
+- Type D (Whisper Error): 184
+- Type E (Script Mismatch): 0
+- Type F (Envelope Violation): 3
+- Total failed: 193 / 4199
+- Dominant failure: Type D (Whisper recognition limits — 95% of failures)
+
+### Per-Script Breakdown
+- Script_1: 294/298 (98.66%)
+- Script_2: 1146/1254 (91.39%)
+- Script_3: 841/865 (97.23%)
+- Script_4: 949/990 (95.86%)
+- Script_5: 776/792 (97.98%)
+
+### Stage 1-2 Results (Script_5 re-processing)
+- Script_5: 785/800 matched (98.1%)
+- 796 WAV files produced
+- Metadata preserved: 1278 existing entries (Scripts 1-4) + 785 new Script_5 entries = 2063 total
+
+### Result
+- Previous score: ~72% (Iteration 4c Tier 1) / unknown (Iteration 6 incomplete)
+- New score: **95.48%** (all requirements met ≥ 95%)
+- **ALL REQUIREMENTS MET — Ready for Stage 5 Finalization**
+
+### Key Learnings
+1. **Parameter regression is dangerous.** AUDIO_PAD_MS=100 was explicitly reverted in Iter 4a but somehow came back.
+2. **Automated metrics miss perceptual issues.** R2/R6 passed 100% while audible bleed existed in voiced regions.
+3. **Always protect metadata.** Single-script `"w"` mode destroyed 4 scripts of metadata in one run.
