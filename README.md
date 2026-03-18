@@ -132,7 +132,7 @@ pip install -r requirements.txt
 ## 리포지토리 구조
 
 ```
-G:\Projects\AI_Research\TTSDataSetCleanser\
+{LocalDrive}:\Projects\AI_Research\TTSDataSetCleanser\
   src/align_and_split.py    # Stage 1-2: 정렬 및 분할
   src/evaluate_dataset.py   # Stage 3-4: 검증 및 평가
   src/pipeline_manager.py   # 워크플로 오케스트레이터
@@ -150,4 +150,4 @@ G:\Projects\AI_Research\TTSDataSetCleanser\
 | OS | Windows 10 Pro |
 | Python | 3.11 |
 | GPU | NVIDIA RTX 3060 Ti (8GB VRAM) |
-| 파일시스템 | exFAT (G: 드라이브) |
+| 파일시스템 | exFAT (로컬 드라이브) |
