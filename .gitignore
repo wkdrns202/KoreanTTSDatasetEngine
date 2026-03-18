@@ -39,3 +39,15 @@ nul
 logs/eval_checkpoint.json
 logs/pipeline_checkpoint.json
 reports/qc_checkpoint.json
+
+# Sensitive data — contains copyrighted script text / transcriptions
+reports/qc_report.csv
+logs/cleansed_data_list_qc_report.csv
+logs/evaluation_report.json
+logs/failing_segments.txt
+logs/drift_analysis.txt
+TaskLogs/metadata.txt
+TaskLogs/script_260207_Backup.txt
+TaskLogs/skipped_lines.log
+TaskLogs/skipped_script2.log
+TaskLogs/skipped_script5.log
