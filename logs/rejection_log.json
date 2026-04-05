@@ -1,0 +1,2092 @@
+[
+  {
+    "filename": "Script_1_0061.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.1794,
+      "ast_p": 0.0015,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.18,p=0.0015,AST=0.2272vs0.1916s/char,session=Script_1_1-122"
+    ]
+  },
+  {
+    "filename": "Script_1_0084.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.5062,
+      "ast_p": 0.0005,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.51,p=0.0005,AST=0.2309vs0.1916s/char,session=Script_1_1-122"
+    ]
+  },
+  {
+    "filename": "Script_1_0163.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.649,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1494,
+      "ast_z": 2.5517,
+      "ast_p": 0.0107,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.649
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.55,p=0.0107,AST=0.2138vs0.1875s/char,session=Script_1_123-220"
+    ]
+  },
+  {
+    "filename": "Script_1_0252.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6331,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1288,
+      "ast_z": 2.6137,
+      "ast_p": 0.009,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6331
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.61,p=0.0090,AST=0.2324vs0.1939s/char,session=Script_1_221-300"
+    ]
+  },
+  {
+    "filename": "Script_1_0288.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 5.5441,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=5.54,p=0.0000,AST=0.2756vs0.1939s/char,session=Script_1_221-300"
+    ]
+  },
+  {
+    "filename": "Script_2_0070.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 5.332,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=5.33,p=0.0000,AST=0.3900vs0.2111s/char,session=Script_2_1-162"
+    ]
+  },
+  {
+    "filename": "Script_2_0093.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.3553,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.36,p=0.0000,AST=0.3572vs0.2111s/char,session=Script_2_1-162"
+    ]
+  },
+  {
+    "filename": "Script_2_0152.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6455,
+    "scores": {
+      "S_unprompted": 0.5,
+      "S_prompted": 0.5,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.2894,
+      "ast_z": -2.1319,
+      "ast_p": 0.033,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6455
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.13,p=0.0330,AST=0.1396vs0.2111s/char,session=Script_2_1-162"
+    ]
+  },
+  {
+    "filename": "Script_2_0236.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.624,
+    "scores": {
+      "S_unprompted": 0.9333,
+      "S_prompted": 0.9333,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1265,
+      "ast_z": 2.6204,
+      "ast_p": 0.0088,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.624
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.62,p=0.0088,AST=0.3217vs0.2170s/char,session=Script_2_163-473"
+    ]
+  },
+  {
+    "filename": "Script_2_0337.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.1768,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.18,p=0.0000,AST=0.3839vs0.2170s/char,session=Script_2_163-473"
+    ]
+  },
+  {
+    "filename": "Script_2_0375.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 10.3055,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=10.31,p=0.0000,AST=0.6288vs0.2170s/char,session=Script_2_163-473"
+    ]
+  },
+  {
+    "filename": "Script_2_0453.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5759,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0729,
+      "ast_z": 2.7812,
+      "ast_p": 0.0054,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5759
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.78,p=0.0054,AST=0.3281vs0.2170s/char,session=Script_2_163-473"
+    ]
+  },
+  {
+    "filename": "Script_2_0466.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.0993,
+      "ast_p": 0.0019,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.10,p=0.0019,AST=0.3409vs0.2170s/char,session=Script_2_163-473"
+    ]
+  },
+  {
+    "filename": "Script_2_0521.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.4289,
+      "ast_p": 0.0006,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.43,p=0.0006,AST=0.2950vs0.2136s/char,session=Script_2_474-547"
+    ]
+  },
+  {
+    "filename": "Script_2_0525.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.019,
+    "scores": {
+      "S_unprompted": 0.9333,
+      "S_prompted": 0.9333,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.2183,
+      "ast_p": 0.0013,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.019
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.22,p=0.0013,AST=0.2900vs0.2136s/char,session=Script_2_474-547"
+    ]
+  },
+  {
+    "filename": "Script_2_0594.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6351,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1313,
+      "ast_z": 2.6062,
+      "ast_p": 0.0092,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6351
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.61,p=0.0092,AST=0.2856vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0713.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6147,
+    "scores": {
+      "S_unprompted": 0.8718,
+      "S_prompted": 0.8718,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1237,
+      "ast_z": 2.6288,
+      "ast_p": 0.0086,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6147
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.63,p=0.0086,AST=0.2862vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0765.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.3929,
+      "ast_p": 0.0007,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.39,p=0.0007,AST=0.3071vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0824.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 8.235,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=8.23,p=0.0000,AST=0.4400vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0827.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.8251,
+      "ast_p": 0.0001,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.83,p=0.0001,AST=0.3190vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0860.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5314,
+    "scores": {
+      "S_unprompted": 0.96,
+      "S_prompted": 0.96,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0469,
+      "ast_z": 2.8593,
+      "ast_p": 0.0042,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5314
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.86,p=0.0042,AST=0.2925vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0862.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6364,
+    "scores": {
+      "S_unprompted": 0.8095,
+      "S_prompted": 0.8095,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1641,
+      "ast_z": 2.5078,
+      "ast_p": 0.0121,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6364
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.51,p=0.0121,AST=0.2829vs0.2140s/char,session=Script_2_548-891"
+    ]
+  },
+  {
+    "filename": "Script_2_0973.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.4944,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.49,p=0.0000,AST=0.3840vs0.2110s/char,session=Script_2_892-1301"
+    ]
+  },
+  {
+    "filename": "Script_2_0993.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 6.7283,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=6.73,p=0.0000,AST=0.4700vs0.2110s/char,session=Script_2_892-1301"
+    ]
+  },
+  {
+    "filename": "Script_2_1032.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5214,
+    "scores": {
+      "S_unprompted": 0.8889,
+      "S_prompted": 0.8889,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0452,
+      "ast_z": 2.8645,
+      "ast_p": 0.0042,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5214
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.86,p=0.0042,AST=0.3212vs0.2110s/char,session=Script_2_892-1301"
+    ]
+  },
+  {
+    "filename": "Script_2_1070.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 12.0099,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=12.01,p=0.0000,AST=0.6733vs0.2110s/char,session=Script_2_892-1301"
+    ]
+  },
+  {
+    "filename": "Script_2_1246.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.3515,
+      "ast_p": 0.0008,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.35,p=0.0008,AST=0.3400vs0.2110s/char,session=Script_2_892-1301"
+    ]
+  },
+  {
+    "filename": "Script_2_1316.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5734,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0711,
+      "ast_z": 2.7867,
+      "ast_p": 0.0053,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5734
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.79,p=0.0053,AST=0.2600vs0.2034s/char,session=Script_2_1302-1416"
+    ]
+  },
+  {
+    "filename": "Script_2_1319.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0189,
+    "scores": {
+      "S_unprompted": 0.9091,
+      "S_prompted": 0.9091,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.1451,
+      "ast_p": 0.0017,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0189
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.15,p=0.0017,AST=0.2673vs0.2034s/char,session=Script_2_1302-1416"
+    ]
+  },
+  {
+    "filename": "Script_2_1350.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.2977,
+      "ast_p": 0.001,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.30,p=0.0010,AST=0.2704vs0.2034s/char,session=Script_2_1302-1416"
+    ]
+  },
+  {
+    "filename": "Script_3_0022.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0191,
+    "scores": {
+      "S_unprompted": 0.9608,
+      "S_prompted": 0.9608,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": -4.3445,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0191
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-4.34,p=0.0000,AST=0.1369vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0118.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.2985,
+      "ast_p": 0.001,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.30,p=0.0010,AST=0.2530vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0129.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5548,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0583,
+      "ast_z": 2.825,
+      "ast_p": 0.0047,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5548
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.82,p=0.0047,AST=0.2458vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0140.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.4647,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0201,
+      "ast_z": 2.9396,
+      "ast_p": 0.0033,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.4647
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.94,p=0.0033,AST=0.2476vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0160.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.1469,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.15,p=0.0000,AST=0.2659vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0203.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.4094,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0094,
+      "ast_z": 2.9718,
+      "ast_p": 0.003,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.4094
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.97,p=0.0030,AST=0.2481vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0235.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5969,
+    "scores": {
+      "S_unprompted": 0.8438,
+      "S_prompted": 0.8438,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1072,
+      "ast_z": -2.6783,
+      "ast_p": 0.0074,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5969
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.68,p=0.0074,AST=0.1622vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0253.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5468,
+    "scores": {
+      "S_unprompted": 0.9024,
+      "S_prompted": 0.9024,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0593,
+      "ast_z": -2.8222,
+      "ast_p": 0.0048,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5468
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.82,p=0.0048,AST=0.1600vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0274.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.522,
+    "scores": {
+      "S_unprompted": 0.9286,
+      "S_prompted": 0.9286,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0436,
+      "ast_z": -2.8692,
+      "ast_p": 0.0041,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.522
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.87,p=0.0041,AST=0.1593vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0298.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6084,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1014,
+      "ast_z": 2.6959,
+      "ast_p": 0.007,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6084
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.70,p=0.0070,AST=0.2439vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0305.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6438,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1424,
+      "ast_z": 2.5728,
+      "ast_p": 0.0101,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6438
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.57,p=0.0101,AST=0.2420vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0316.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.0552,
+      "ast_p": 0.0022,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.06,p=0.0022,AST=0.2493vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0374.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.477,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0236,
+      "ast_z": 2.9293,
+      "ast_p": 0.0034,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.477
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.93,p=0.0034,AST=0.2474vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0383.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.8006,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.80,p=0.0000,AST=0.2759vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0387.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.4626,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0196,
+      "ast_z": 2.9412,
+      "ast_p": 0.0033,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.4626
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.94,p=0.0033,AST=0.2476vs0.2029s/char,session=Script_3_1-404"
+    ]
+  },
+  {
+    "filename": "Script_3_0475.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6253,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1195,
+      "ast_z": 2.6414,
+      "ast_p": 0.0083,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6253
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.64,p=0.0083,AST=0.2525vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0521.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.3352,
+      "ast_p": 0.0009,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.34,p=0.0009,AST=0.2640vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0535.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6496,
+    "scores": {
+      "S_unprompted": 0.8158,
+      "S_prompted": 0.8158,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1842,
+      "ast_z": -2.4474,
+      "ast_p": 0.0144,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6496
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.45,p=0.0144,AST=0.1682vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0537.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6074,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1005,
+      "ast_z": 2.6986,
+      "ast_p": 0.007,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6074
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.70,p=0.0070,AST=0.2534vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0605.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.0373,
+      "ast_p": 0.0024,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.04,p=0.0024,AST=0.2591vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0630.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.4176,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0106,
+      "ast_z": 2.9682,
+      "ast_p": 0.003,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.4176
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.97,p=0.0030,AST=0.2579vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0763.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.3723,
+      "ast_p": 0.0007,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.37,p=0.0007,AST=0.2646vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0799.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5811,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.077,
+      "ast_z": 2.769,
+      "ast_p": 0.0056,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5811
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.77,p=0.0056,AST=0.2546vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0806.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0185,
+    "scores": {
+      "S_unprompted": 0.8056,
+      "S_prompted": 0.8056,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 6.0482,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0185
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=6.05,p=0.0000,AST=0.3090vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_3_0810.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6362,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1326,
+      "ast_z": 2.6023,
+      "ast_p": 0.0093,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6362
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.60,p=0.0093,AST=0.2519vs0.2087s/char,session=Script_3_405-878"
+    ]
+  },
+  {
+    "filename": "Script_4_0040.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.4777,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0238,
+      "ast_z": 2.9287,
+      "ast_p": 0.0034,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.4777
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.93,p=0.0034,AST=0.2100vs0.1830s/char,session=Script_4_1-100"
+    ]
+  },
+  {
+    "filename": "Script_4_0162.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": -4.1496,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-4.15,p=0.0000,AST=0.1298vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0246.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.1872,
+      "ast_p": 0.0014,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.19,p=0.0014,AST=0.2280vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0263.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6169,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1103,
+      "ast_z": 2.6692,
+      "ast_p": 0.0076,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6169
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.67,p=0.0076,AST=0.2211vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0275.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 8.7123,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=8.71,p=0.0000,AST=0.3021vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0387.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.3736,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.37,p=0.0000,AST=0.2439vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0483.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5703,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0688,
+      "ast_z": 2.7936,
+      "ast_p": 0.0052,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5703
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.79,p=0.0052,AST=0.2228vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0621.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.486,
+      "ast_p": 0.0005,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.49,p=0.0005,AST=0.2321vs0.1854s/char,session=Script_4_101-621"
+    ]
+  },
+  {
+    "filename": "Script_4_0627.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5923,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0863,
+      "ast_z": 2.741,
+      "ast_p": 0.0061,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5923
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.74,p=0.0061,AST=0.2404vs0.1961s/char,session=Script_4_622-650"
+    ]
+  },
+  {
+    "filename": "Script_4_0654.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": -3.3932,
+      "ast_p": 0.0007,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-3.39,p=0.0007,AST=0.1397vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0758.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5205,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0398,
+      "ast_z": 2.8807,
+      "ast_p": 0.004,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5205
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.88,p=0.0040,AST=0.2223vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0762.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.1541,
+      "ast_p": 0.0016,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.15,p=0.0016,AST=0.2259vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0774.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5657,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0655,
+      "ast_z": 2.8035,
+      "ast_p": 0.0051,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5657
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.80,p=0.0051,AST=0.2213vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0841.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6271,
+    "scores": {
+      "S_unprompted": 0.8727,
+      "S_prompted": 0.8727,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1394,
+      "ast_z": -2.5818,
+      "ast_p": 0.0098,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6271
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.58,p=0.0098,AST=0.1504vs0.1844s/char,session=Script_4_651-980",
+      "formal_ending_truncation_risk"
+    ]
+  },
+  {
+    "filename": "Script_4_0858.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 5.4172,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=5.42,p=0.0000,AST=0.2557vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0866.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5876,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0824,
+      "ast_z": 2.7529,
+      "ast_p": 0.0059,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5876
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.75,p=0.0059,AST=0.2206vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_4_0891.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.019,
+    "scores": {
+      "S_unprompted": 0.9545,
+      "S_prompted": 0.9545,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.3621,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.019
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.36,p=0.0000,AST=0.2418vs0.1844s/char,session=Script_4_651-980"
+    ]
+  },
+  {
+    "filename": "Script_5_0031.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 4.3272,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=4.33,p=0.0000,AST=0.2506vs0.2021s/char,session=Script_5_1-43"
+    ]
+  },
+  {
+    "filename": "Script_5_0074.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6141,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1073,
+      "ast_z": 2.6781,
+      "ast_p": 0.0074,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6141
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.68,p=0.0074,AST=0.2715vs0.2153s/char,session=Script_5_44-200"
+    ]
+  },
+  {
+    "filename": "Script_5_0118.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.0668,
+      "ast_p": 0.0022,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.07,p=0.0022,AST=0.2797vs0.2153s/char,session=Script_5_44-200"
+    ]
+  },
+  {
+    "filename": "Script_5_0132.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 7.514,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=7.51,p=0.0000,AST=0.3731vs0.2153s/char,session=Script_5_44-200"
+    ]
+  },
+  {
+    "filename": "Script_5_0252.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.4588,
+      "ast_p": 0.0005,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.46,p=0.0005,AST=0.2691vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0350.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6175,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1109,
+      "ast_z": -2.6672,
+      "ast_p": 0.0076,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6175
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-2.67,p=0.0076,AST=0.1688vs0.2125s/char,session=Script_5_201-541",
+      "formal_ending_truncation_risk"
+    ]
+  },
+  {
+    "filename": "Script_5_0361.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": -3.4542,
+      "ast_p": 0.0006,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_fast",
+      "z=-3.45,p=0.0006,AST=0.1559vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0410.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.6099,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.1029,
+      "ast_z": 2.6913,
+      "ast_p": 0.0071,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.6099
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.69,p=0.0071,AST=0.2566vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0446.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.3666,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0049,
+      "ast_z": 2.9854,
+      "ast_p": 0.0028,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.3666
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.99,p=0.0028,AST=0.2614vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0450.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5214,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0402,
+      "ast_z": 2.8794,
+      "ast_p": 0.004,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5214
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.88,p=0.0040,AST=0.2596vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0524.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.5751,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0723,
+      "ast_z": 2.783,
+      "ast_p": 0.0054,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.5751
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.78,p=0.0054,AST=0.2581vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0534.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.483,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0254,
+      "ast_z": 2.9238,
+      "ast_p": 0.0035,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.483
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=2.92,p=0.0035,AST=0.2604vs0.2125s/char,session=Script_5_201-541"
+    ]
+  },
+  {
+    "filename": "Script_5_0589.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 11.6394,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=11.64,p=0.0000,AST=0.6271vs0.2233s/char,session=Script_5_542-800"
+    ]
+  },
+  {
+    "filename": "Script_5_0744.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0187,
+    "scores": {
+      "S_unprompted": 0.8438,
+      "S_prompted": 0.8438,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 5.4464,
+      "ast_p": 0.0,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0187
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=5.45,p=0.0000,AST=0.4122vs0.2233s/char,session=Script_5_542-800"
+    ]
+  },
+  {
+    "filename": "Script_5_0765.wav",
+    "verdict": "REJECT",
+    "S_composite": 0.0192,
+    "scores": {
+      "S_unprompted": 1.0,
+      "S_prompted": 1.0,
+      "S_gap": 1.0,
+      "S_snr": 1.0,
+      "S_duration": 0.0,
+      "ast_z": 3.8132,
+      "ast_p": 0.0001,
+      "S_stability": null,
+      "S_confidence": 0.5,
+      "S_boundary": 1.0,
+      "S_composite": 0.0192
+    },
+    "flags": [
+      "unprompted_not_available",
+      "HUMAN_REVIEW_NEEDED",
+      "AST_anomaly_slow",
+      "z=3.81,p=0.0001,AST=0.3556vs0.2233s/char,session=Script_5_542-800"
+    ]
+  }
+]
