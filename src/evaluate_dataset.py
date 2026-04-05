@@ -265,7 +265,12 @@ def evaluate_single_wav(wav_path, gt_text, model, quick_mode=False):
         'ground_truth': gt_text,
         'whisper_text': '',
         'similarity': 0.0,
+        'similarity_prompted': 0.0,
+        'similarity_unprompted': 0.0,
         'cer': 1.0,
+        'avg_logprob': -1.0,
+        'no_speech_prob': 0.0,
+        'compression_ratio': 1.0,
         'boundary_pass': False,
         'boundary_first_db': -100.0,
         'boundary_last_db': -100.0,
@@ -331,25 +336,35 @@ def evaluate_single_wav(wav_path, gt_text, model, quick_mode=False):
                 audio_16k = audio_16k[lead_16k:-tail_16k]
 
             # Run 1: GT-prompted (vocabulary priming)
+            sim_prompted, sim_unprompted = 0.0, 0.0
+            text_prompted, text_unprompted = '', ''
+
             r1 = transcribe_with_timeout(model, audio_16k, language=LANGUAGE,
                                          verbose=False, condition_on_previous_text=False,
                                          fp16=use_fp16, initial_prompt=gt_text)
             if r1 is not None:
-                text1 = r1['text'].strip()
-                _, sim1 = compute_cer(gt_text, text1)
-                if sim1 > best_sim:
-                    best_text, best_sim = text1, sim1
+                text_prompted = r1['text'].strip()
+                _, sim_prompted = compute_cer(gt_text, text_prompted)
+                # Extract Whisper metadata (per-segment averages)
+                segs = r1.get('segments', [])
+                if segs:
+                    result['avg_logprob'] = float(np.mean([s.get('avg_logprob', -1.0) for s in segs]))
+                    result['no_speech_prob'] = float(np.mean([s.get('no_speech_prob', 0.0) for s in segs]))
+                    result['compression_ratio'] = float(np.mean([s.get('compression_ratio', 1.0) for s in segs]))
 
-            # Run 2: Unprompted (only if prompted failed — serves as cross-check)
-            if best_sim < SIMILARITY_THRESHOLD:
-                r2 = transcribe_with_timeout(model, audio_16k, language=LANGUAGE,
-                                             verbose=False, condition_on_previous_text=False,
-                                             fp16=use_fp16)
-                if r2 is not None:
-                    text2 = r2['text'].strip()
-                    _, sim2 = compute_cer(gt_text, text2)
-                    if sim2 > best_sim:
-                        best_text, best_sim = text2, sim2
+            # Run 2: Unprompted (ALWAYS run for selective composer gap analysis)
+            r2 = transcribe_with_timeout(model, audio_16k, language=LANGUAGE,
+                                         verbose=False, condition_on_previous_text=False,
+                                         fp16=use_fp16)
+            if r2 is not None:
+                text_unprompted = r2['text'].strip()
+                _, sim_unprompted = compute_cer(gt_text, text_unprompted)
+
+            # Best of both for backward-compatible verdict
+            if sim_prompted >= sim_unprompted:
+                best_text, best_sim = text_prompted, sim_prompted
+            else:
+                best_text, best_sim = text_unprompted, sim_unprompted
 
             whisper_text = best_text
             similarity = best_sim
@@ -358,6 +373,8 @@ def evaluate_single_wav(wav_path, gt_text, model, quick_mode=False):
             result['whisper_text'] = whisper_text
             result['cer'] = round(cer, 4)
             result['similarity'] = round(similarity, 4)
+            result['similarity_prompted'] = round(sim_prompted, 4)
+            result['similarity_unprompted'] = round(sim_unprompted, 4)
 
             if similarity < SIMILARITY_THRESHOLD:
                 result['failure_reasons'].append(
