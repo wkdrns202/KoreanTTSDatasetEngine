@@ -105,7 +105,7 @@ logging.basicConfig(
         logging.StreamHandler(),
         logging.FileHandler(
             os.path.join(LOG_DIR, "selective_composer.log"),
-            encoding='utf-8', mode='w'
+            encoding='utf-8', mode='a'  # (2026-04-15) 'w'는 import마다 truncate
         )
     ]
 )
@@ -557,8 +557,12 @@ def calibrate_thresholds(all_scores, known_good_files=None, known_bad_files=None
 # ============================================================
 # MAIN SCORING PIPELINE
 # ============================================================
-def load_metadata(metadata_path=METADATA_PATH):
-    """Load script.txt → list of {filename, ground_truth}."""
+def load_metadata(metadata_path=None):
+    """Metadata loader. Resolves METADATA_PATH at call time so module-global
+    overrides from orchestrators (pipeline_manager, drivers) take effect —
+    see 2026-04-15 default-argument-capture fix."""
+    if metadata_path is None:
+        metadata_path = METADATA_PATH
     entries = []
     with open(metadata_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -571,8 +575,13 @@ def load_metadata(metadata_path=METADATA_PATH):
     return entries
 
 
-def load_eval_results(checkpoint_path=EVAL_CHECKPOINT_PATH):
-    """Load evaluation checkpoint for existing prompted/unprompted scores."""
+def load_eval_results(checkpoint_path=None):
+    """Load evaluation checkpoint for existing prompted/unprompted scores.
+    Resolves path at call time so runtime module-global overrides take effect
+    (prior default-argument form captured the value at import time — see
+    2026-04-15 selective_composer eval-checkpoint binding bug)."""
+    if checkpoint_path is None:
+        checkpoint_path = EVAL_CHECKPOINT_PATH
     if not os.path.exists(checkpoint_path):
         return {}
     with open(checkpoint_path, 'r', encoding='utf-8') as f:
@@ -584,8 +593,10 @@ def load_eval_results(checkpoint_path=EVAL_CHECKPOINT_PATH):
     return results
 
 
-def score_all_segments(metadata_entries, wav_dir=WAV_DIR, eval_results=None,
+def score_all_segments(metadata_entries, wav_dir=None, eval_results=None,
                        ast_stats=None, sessions=None):
+    if wav_dir is None:
+        wav_dir = WAV_DIR  # resolve at call time (see 2026-04-15 fix)
     """Compute all scoring dimensions for each segment.
 
     D1 (S_unprompted) and D6 (S_confidence) require eval_results from

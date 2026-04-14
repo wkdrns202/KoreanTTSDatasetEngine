@@ -131,7 +131,7 @@ logging.basicConfig(
         logging.StreamHandler(),
         logging.FileHandler(
             os.path.join(LOG_DIR, "align_and_split.log"),
-            encoding='utf-8', mode='w'
+            encoding='utf-8', mode='a'  # (2026-04-15) 'w'는 import마다 truncate
         )
     ]
 )
@@ -633,10 +633,16 @@ def post_process_wavs(wav_dir, wav_filter=None):
 # CORE: ALIGN AND SPLIT
 # ============================================================
 
-def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None,
+def align_and_split(model_size=None, script_filter=None, range_filter=None,
                     resume=True, device_override=None,
                     audio_dir=None, output_wav_dir=None, metadata_path=None,
                     start_line=1):
+    # Resolve model_size at call time so module-global overrides (e.g., from
+    # orchestrators setting `aas.MODEL_SIZE = 'large'` before calling) take
+    # effect. Prior default-argument form captured MODEL_SIZE at function-
+    # definition time — see 2026-04-15 default-argument-capture audit.
+    if model_size is None:
+        model_size = MODEL_SIZE
     """Main alignment and splitting pipeline.
 
     Groups audio files by script number and processes each script sequentially,

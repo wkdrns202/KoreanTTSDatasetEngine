@@ -675,3 +675,119 @@ FADE_MS              = 3        # speech boundary fade-in
 FADE_OUT_MS          = 5        # tail fade-out
 ```
 
+
+---
+
+# [APPEND #5] 2026-04-15 새벽 — Python Default-Argument Capture 하드코딩 (Stage 4.5)
+
+## 1. 발견된 문제
+
+Stage 4.5 Selective Composer 1차 실행 결과:
+- ACCEPT 239 (16.2%) / PENDING 1183 (80.3%) / REJECT 51 (3.5%)
+- 7 차원 중 3 차원이 상수(S_gap, S_snr, S_boundary 모두 1.0으로 고정)
+- **S_confidence가 1473개 전부 정확히 0.5** (std=0.000)
+- Per-script 분포 극단적 편향: S1 ACCEPT=0, S5 ACCEPT=239, S6 ACCEPT=0
+
+## 2. 진단
+
+### 2-1. 로그 단서
+```
+2026-04-15 01:24:12,858 [INFO] Loaded 4199 evaluation results   ← 우리 v3는 1473개
+2026-04-15 01:24:12,858 [WARNING] Evaluation results lack unprompted scores
+```
+
+4199개는 2026-02-20 canonical 배치 checkpoint. Composer가 **잘못된 파일을 읽고 있음**.
+
+### 2-2. 원인 — Python Default-Argument Capture
+
+`selective_composer.py:574`:
+```python
+def load_eval_results(checkpoint_path=EVAL_CHECKPOINT_PATH):
+```
+
+Python은 **함수 정의 파싱 시점에** default 값 표현식을 평가하고 그 결과 객체를 함수에 바인딩합니다. `EVAL_CHECKPOINT_PATH`는 import 시점에 `os.path.join(LOG_DIR, "eval_checkpoint.json")`으로 평가되어 **구체적 문자열**이 박힙니다.
+
+내 드라이버 스크립트의 런타임 override:
+```python
+sc.EVAL_CHECKPOINT_PATH = '...new batch path...'  # 모듈 attribute 변경
+sc.main()                                          # main 내부에서 load_eval_results() 호출
+                                                   # → 이미 박힌 default 사용 (OLD 경로)
+```
+
+모듈 attribute는 바뀌었지만, 함수 시그니처의 default는 바인딩 당시의 **구 경로 문자열**을 그대로 참조.
+
+## 3. 수정
+
+`load_eval_results`, `load_metadata`, `score_all_segments` 세 함수 모두 동일 결함.
+
+```python
+# BEFORE
+def load_eval_results(checkpoint_path=EVAL_CHECKPOINT_PATH):
+    if not os.path.exists(checkpoint_path):
+
+# AFTER
+def load_eval_results(checkpoint_path=None):
+    if checkpoint_path is None:
+        checkpoint_path = EVAL_CHECKPOINT_PATH  # 호출 시점 resolve
+    if not os.path.exists(checkpoint_path):
+```
+
+## 4. 수정 후 재실행 결과
+
+| 지표 | 수정 전 | 수정 후 |
+|------|--------|--------|
+| ACCEPT | 239 (16.2%) | **1245 (84.5%)** |
+| PENDING | 1183 | 204 |
+| REJECT | 51 | 24 |
+| S_confidence mean/std | 0.500 / 0.000 | **0.783 / 0.048** |
+| S_gap mean/std | 1.000 / 0.000 | **0.982 / 0.035** |
+| tau_accept (calibrated) | 0.7646 | **0.8424** |
+
+차원별 변별력 회복, per-script 분포 정상화(S1 A=546, S5 A=403, S6 A=296).
+
+## 5. 전 스테이지 감사 결과
+
+유사 결함 전수 조사 (`Explore` agent 활용) 결과:
+
+### CRITICAL (현재 문제 있거나 될 여지 있음)
+- **`align_and_split.py:594`**: `def align_and_split(model_size=MODEL_SIZE, ...)` — 현재는 모든 call site가 explicit arg 전달하여 작동 중이나, 새 caller가 `model_size` 생략하면 import 시점 "medium" 고정. 같은 클래스 결함. **None default 패턴으로 전환 권고**.
+
+### MEDIUM (Side-effect at import time)
+- **`align_and_split.py:131`**, **`evaluate_dataset.py:92`**, **`selective_composer.py:106`**: 모두 모듈 상단에서
+  ```python
+  logging.FileHandler(..., mode='w')
+  ```
+  사용. 모듈 import 시마다 로그 파일 **truncate**. 다른 orchestrator가 import하면 이전 실행 로그 손실. `mode='a'`로 변경 권고.
+
+### LATENT (현재 안전, 패턴 취약)
+- `evaluate_dataset.py:164,230`: `compute_rms_windowed(window_ms=RMS_WINDOW_MS)`, `transcribe_with_timeout(timeout_s=WHISPER_TIMEOUT_S)` — 모든 call site가 explicit arg 전달 중이나 동일 결함 소지
+- `align_and_split.py:184,347,364`: `apply_fade`, `compute_rms_windowed`, `find_voice_onset_offset` 동일 패턴
+- `selective_composer.py:440`: `compose_decision(tau_accept=DEFAULT_TAU_ACCEPT, ...)` 동일
+
+### SAFE BY DESIGN
+- `pipeline_manager.py`: CLEAN (오케스트레이터로서 상수 미redeclaration, __init__에서 수용, 명시적 전달)
+- `selective_composer.py:578,596` (이번 수정본): None default + 런타임 resolve — **정답 패턴**
+
+## 6. 재발 방지 원칙 (추가)
+
+- **원칙 14 (신규)**: 함수 default 인자로 모듈 전역 상수를 직접 쓰지 말 것. Python은 함수 정의 시점에 default를 평가·바인딩하므로, 런타임 모듈 attribute override가 무력화됨. 정답 패턴:
+  ```python
+  def foo(path=None):
+      if path is None:
+          path = GLOBAL_PATH   # 호출 시점 resolve
+  ```
+- **원칙 15 (신규)**: 모듈 상단의 `logging.FileHandler(mode='w')`는 import 부수효과. 멀티-오케스트레이터 환경에서 로그 유실 야기. `mode='a'` 또는 orchestrator가 logger 주입하는 구조로 전환.
+- **원칙 16 (신규)**: 모든 경로/임계값 상수는 **두 개의 단일 소스 원칙**을 만족해야 한다:
+  (a) 값 자체는 모듈 상단에 단 한 곳 (원칙 1-3 이미 명시)
+  (b) 함수가 해당 상수를 런타임에 참조해야 override 가능 (원칙 14 신규)
+  두 원칙을 모두 만족해야 진정한 "single source of truth".
+
+## 7. 심각성 평가
+
+이번 결함은 외관상 "파이썬 gotcha"로 분류되지만, **프로젝트의 운영 단위에서는 하드코딩**입니다:
+- 사용자가 의도적으로 `sc.EVAL_CHECKPOINT_PATH`를 override했음에도 기능이 먹지 않음
+- 오케스트레이터 입장에서 "모듈 attribute = 설정"이라는 당연한 가정이 깨짐
+- Stage 4.5의 결과가 **전체 배치 품질 평가를 완전히 왜곡** (84.5% vs 16.2%는 정성적·정량적으로 다른 판단 영역)
+
+이는 2026-04-14 오후의 pipeline_manager 하드코딩 envelope 누락 사고와 **같은 클래스** — "외관상 override 가능한 것처럼 보이지만 실제로는 고정된 값".
+

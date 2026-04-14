@@ -96,7 +96,7 @@ logging.basicConfig(
         logging.StreamHandler(),
         logging.FileHandler(
             os.path.join(LOG_DIR, "evaluate_dataset.log"),
-            encoding='utf-8', mode='w'
+            encoding='utf-8', mode='a'  # (2026-04-15) 'w'는 import마다 truncate
         )
     ]
 )
