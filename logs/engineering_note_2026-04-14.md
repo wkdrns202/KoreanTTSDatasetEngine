@@ -458,3 +458,220 @@ src/
 - **원칙 7 (신규)**: 서로 다른 기준(필터링 규칙)으로 산출된 두 값을 하나의 튜플로 묶어 반환하지 말 것.
   한쪽은 authoritative 경로 산출물, 다른 쪽은 로컬 재계산 — 이런 혼합 반환은 silent metric
   오염의 온상이다. **반환값은 단일 source에서 나와야 한다**.
+
+---
+
+# [APPEND #3] 2026-04-14 저녁 — Front Truncation 완전 해소 여정
+
+## 1. 발견된 문제
+
+DAW에서 산출물을 수동 검증한 결과, 한국어 어두 자음 attack의 **"시작 살짝 씹힘"** 현상 확인. 자동 검증(similarity)은 통과하지만 청취 시 매 라인 앞단이 부자연스럽게 잘려있음.
+
+## 2. 진단 과정 — 네 단계의 가설과 검증
+
+### 단계 1: Stage 2 파라미터 튜닝 (효과 부분)
+가설: fade-in 10ms과 zero-crossing snap이 자음 attack을 감쇠/절삭.
+- `FADE_MS: 10 → 5`
+- `ONSET_SAFETY_MS: 30 → 40`
+- START zero-crossing snap 비활성화
+- 결과: mean onset -0.52ms 앞당김, 64% 라인 개선. 하지만 청취 체감 부족.
+
+### 단계 2: Stage 1 padding 확대 (표면적 개선, 실효 0)
+가설: Whisper가 약한 자음 attack을 타임스탬프에서 누락 → Stage 1 추출 자체가 늦음.
+- `AUDIO_PAD_MS: 50 → 80`
+- `SILENCE_THRESHOLD_DB: -65 → -68`
+- 결과: WAV duration +33ms (padding 확장은 성공), **그러나 voiced region 시작점은 V1과 동일**.
+
+### 단계 3: 구조적 원인 규명 (핵심 발견)
+Stage 2의 트림 로직을 역추적:
+```python
+onset_detected = find_voice_onset_offset(samples)  # 검출된 음성 시작
+onset = max(0, onset_detected - ONSET_SAFETY_MS)   # 30ms pull back
+voiced = samples[onset:offset]
+```
+Stage 1이 padding을 30ms 늘려도, Stage 2의 `voice_onset` 검출 위치도 chunk 내부에서 30ms 이동 → `-30ms pullback`이라는 상수 오프셋이 그대로 작용하여 최종 voiced region 시작점은 **항상 source time −30ms로 고정**.
+
+즉 `ONSET_SAFETY_MS`가 **Stage 2의 실효 최대 pullback 거리**. 이 값이 작으면 Stage 1의 여유 padding은 Stage 2에 의해 다시 트림됨.
+
+### 단계 4: Pull-back 확장 실험 (80/100/120)
+가설: ONSET_SAFETY_MS를 pad 크기만큼 키우면 효과.
+- 테스트: 80, 100, 120 각각 실행
+- 결과: 세 값 모두 **거의 동일한 산출**. 대부분 라인에서 `onset = 0`으로 clamp (chunk 경계 도달).
+- 결론: AUDIO_PAD_MS가 병목. 80ms 한계에서 safety 확장은 효과 없음.
+
+### 단계 5: DAW 수동 분석 → 320ms 경계 발견
+사용자 DAW 검증: **최소 320ms는 확보되어야** consonant attack + pre-attack breath가 완전 보존됨.
+- `AUDIO_PAD_MS: 80 → 320` (Stage 1 extraction)
+- `ONSET_SAFETY_MS: 80 → 320` (Stage 2 pullback)
+- 결과: voiced region 시작점이 source 기준 −320ms로 이동, speech는 voiced region 170-230ms 위치.
+
+## 3. 320ms 검증 결과
+
+| 지표 | V1 | S80 | S320 |
+|------|----|----|------|
+| dur delta vs V1 | — | +234ms | **+448ms** |
+| onset shift vs V1 | — | +106ms | **+281ms** |
+| head20 peak (voiced 첫 20ms amplitude) | 0.279 | 0.210 | **0.002** |
+| 인접 WAV cross-correlation max | — | — | 0.257 (< 0.5) |
+
+**부작용 평가**:
+- ✅ **bleed 없음**: head20 peak 0.002 = -54dB (무음 수준), 인접 WAV 상관 ≤ 0.26
+- ✅ **MIN_GAP_FOR_PAD_MS=30 보호** 유지: gap < 30ms 시 left_pad=0 로직이 밀집 발화에서 이전 세그먼트 침범 방지
+- ⚠ **pre-speech ambient 180ms**: voiced region 첫 180ms가 불필요한 녹음실 ambient (기계적 낭비)
+
+## 4. 해결 방안 — 320ms 사수 + 앞단 100ms 완전 무음화
+
+**핵심 설계**:
+- Stage 1 320ms 추출 + Stage 2 320ms pullback **유지** (consonant attack 손실 방지)
+- Stage 2 처리 후 voiced region의 **pre-speech ambient 구간을 100ms로 trim**
+- Trim 후 남은 100ms를 **완전 무음(sample=0)으로 대체** — 녹음실 ambient noise 제거
+
+**최종 voiced region 구조**:
+```
+[100ms 완전 무음(zeros)] + [speech content with full consonant attack]
+```
+
+**최종 WAV 구조**:
+```
+[400ms pre-attack 무음(envelope)] + [100ms trim된 완전 무음] + [speech] + [730ms tail 무음]
+```
+
+총 pre-speech 길이 500ms (400 + 100), 모두 완전 무음. TTS 학습 측면에서:
+- Ambient noise가 "silence" 토큰에 섞이지 않음 → 모델이 더 깨끗한 무음-발화 전이를 학습
+- 300-500ms 범위는 TTS 표준 prosodic prefix 범위 내
+
+## 5. 적용 파라미터 (최종)
+
+| 파라미터 | 값 | 역할 |
+|---------|-----|------|
+| `AUDIO_PAD_MS` | **320** | Stage 1 left padding — consonant attack 원본 보존 |
+| `MIN_GAP_FOR_PAD_MS` | 30 | 밀집 발화 시 padding=0으로 bleed 방지 |
+| `SILENCE_THRESHOLD_DB` | **-68** | Stage 2 voice detection — 약한 자음 민감도 |
+| `RMS_WINDOW_MS` | 10 | voice detection 해상도 |
+| `FADE_MS` (fade-in) | **3** | speech boundary fade (공백→발화 전환) |
+| `FADE_OUT_MS` | 5 | tail fade |
+| `ONSET_SAFETY_MS` | **320** | Stage 2 pullback — Stage 1 padding과 동일하여 clamp 해제 |
+| `OFFSET_SAFETY_MS` | 120 | tail side (sustained silence 보호) |
+| `SUSTAINED_SILENCE_MS` | 1000 | 한국어 micro-pause 보호 |
+| `PREATTACK_SILENCE_MS` | 400 | envelope pre-attack |
+| `TAIL_SILENCE_MS` | 730 | envelope tail |
+| **`PRESPEECH_PAD_MS`** (신규) | **100** | 음성 시작 전 무음 패드 — ambient trim 후 zero-fill 적용 |
+
+## 6. 재발 방지 원칙 (추가)
+
+- **원칙 8 (신규)**: Stage 1 padding과 Stage 2 pullback은 **동일 값으로 동반 조정**해야 한다. 한쪽만 키우면 다른 쪽이 병목이 된다. 두 값은 논리적 짝이다.
+- **원칙 9 (신규)**: 사용자 DAW/청취 검증으로 도출된 파라미터는 자동 측정 메트릭보다 우선한다. 자동 측정은 "유의미한 변화가 있는가"는 잘 보지만 "듣기에 자연스러운가"는 못 본다.
+- **원칙 10 (신규)**: ambient 무음 구간과 완전 무음 구간을 구분하여 관리한다. TTS 학습 데이터는 "silence = 정확히 0"을 요구하므로 녹음실 ambient는 샘플 레벨에서 zeroing 필요.
+
+
+---
+
+# [APPEND #4] 2026-04-14 저녁 — Zero-fill 구현의 함정과 Dual-Threshold 해법
+
+## 1. 1차 구현 실패
+
+`PRESPEECH_PAD_MS=100` 구현 1차 버전:
+```python
+speech_pos = speech_onset_abs - onset   # Stage 2의 voice_onset 재사용
+if speech_pos > target_pre:
+    voiced = voiced[speech_pos - target_pre:]
+if speech_pos > 0:
+    voiced[:min(speech_pos, target_pre)] = 0.0
+```
+
+테스트 결과: 18개 라인 중 **3개만 100ms 목표 도달**, 나머지는 0-50ms만 zero-fill.
+
+## 2. 진단 — SILENCE_THRESHOLD_DB = -68이 ambient까지 voiced로 판정
+
+Stage 2의 `find_voice_onset_offset()`가 **-68dB**로 동작 중. 녹음실 ambient noise floor가 전형적으로 -55 ~ -60dB 수준이라 **-68dB 이상이 됨** → Stage 2 관점에서 chunk 전체가 이미 "voiced" → `voice_onset ≈ chunk 시작 0`.
+
+결과: `speech_pos = voice_onset - onset = 0 - 0 = 0` → 제로화할 영역 자체가 없음.
+
+즉 **Stage 2의 voice-onset 검출은 "약한 자음 attack까지 포착하는 것"이 목적이지, "loud speech body 위치"를 찾는 게 아님**. 두 용도를 하나의 임계값으로 겸하려 한 것이 설계 오류.
+
+## 3. Dual-Threshold 아키텍처 도입
+
+**두 개의 임계값을 용도별로 분리**:
+
+| 상수 | 값 | 용도 |
+|------|-----|------|
+| `SILENCE_THRESHOLD_DB` | **-68** | Stage 2 `find_voice_onset_offset()`의 voice onset 검출. ONSET_SAFETY=320 pullback의 기준점. **자음 attack 민감도** 확보 목적. ambient를 voiced로 잘못 봐도 괜찮음(pullback이 어차피 320ms). |
+| `SPEECH_DETECT_DB` (신규) | **-40** | Step 3.5의 loud speech body 위치 독립 탐색. **ambient(-55~-60dB)와 loud speech(>-40dB)의 명확한 분리** 목적. 자음 attack은 의도적으로 포함 안 시킴 — 100ms 범위 내로 보존. |
+
+## 4. 구현 변경
+
+`post_process_wavs()` Step 3.5에서 별도 RMS 스캔 수행:
+
+```python
+win = int(sr * RMS_WINDOW_MS / 1000)
+nw = len(voiced) // win
+body_pos = 0
+if nw >= 5:
+    trimmed = voiced[:nw*win].reshape(nw, win)
+    rms_v = np.sqrt(np.mean(trimmed**2, axis=1) + 1e-12)
+    db_v = 20 * np.log10(np.maximum(rms_v, 1e-10))
+    loud_idx = np.where(db_v >= SPEECH_DETECT_DB)[0]   # -40dB
+    if len(loud_idx) > 0:
+        body_pos = int(loud_idx[0]) * win
+
+# Trim pre-body ambient beyond 100ms, zero-fill the rest
+target_pre = int(sr * PRESPEECH_PAD_MS / 1000)
+if body_pos > target_pre:
+    trim = body_pos - target_pre
+    voiced = voiced[trim:]
+    body_pos = target_pre
+if body_pos > 0:
+    voiced[:body_pos] = 0.0
+
+speech_pos = body_pos  # fade-in은 이 위치에서 시작
+```
+
+## 5. 검증 결과 (L0301-0318, 18개 라인)
+
+| 지표 | 측정값 | 판정 |
+|------|-------|------|
+| Zero-fill 영역 길이 mean | 99.47ms | ✅ 목표 100ms 도달 |
+| 100ms 정확 도달 라인 | 17/18 | ✅ 94% |
+| 제로 영역 내 peak amplitude | max = 0.000000 | ✅ EXACT -∞ dB |
+| TRIM vs S320 duration delta | -266ms | ✅ ambient 제거 확인 |
+| TRIM vs V1 duration delta | +182ms | ✅ (100ms zeros + 82ms consonant attack) |
+| Zero → speech 경계 click | ramp 첫 10 samples 모두 < 0.0002 | ✅ 3ms raised-cosine fade 정상 |
+
+## 6. 재발 방지 원칙 (추가)
+
+- **원칙 11 (신규)**: **하나의 상수를 여러 용도에 겹쳐 쓰지 말 것.** Voice onset 검출(민감도 높은 임계)과 speech body 위치 판정(엄격한 임계)은 물리적으로 다른 목적이다. 용도 분리가 곧 안정성.
+- **원칙 12 (신규)**: Zero-fill 같은 파괴적 연산은 그 범위를 결정하는 임계값이 **의도대로 작동하는지 먼저 측정 검증**해야 한다. 1차 구현이 거의 no-op이었던 것은 측정 없이 "Stage 2 결과를 재사용하면 될 것"이라 가정했기 때문.
+- **원칙 13 (신규)**: voiced region 내부 구조(`[pre-speech silence][consonant][body]`)를 스테이지별로 **명시적으로 모델링**해야 한다. 각 구간의 경계가 어떤 임계로 결정되는지 문서화되지 않으면 이번 같은 사고가 반복된다.
+
+## 7. 최종 활성 파라미터 (2026-04-14 확정)
+
+```python
+# Stage 1
+AUDIO_PAD_MS         = 320      # Left pad — consonant attack 원본 보존
+MIN_GAP_FOR_PAD_MS   = 30       # bleed 방지 최소 gap
+MAX_MERGE            = 5
+SEG_SEARCH_WINDOW    = 25
+SKIP_PENALTY         = 0.01
+MATCH_THRESHOLD      = 0.50
+CONSEC_FAIL_LIMIT    = 10
+TAIL_EXTEND_MAX_MS   = 400
+
+# Stage 2 DSP thresholds
+SILENCE_THRESHOLD_DB = -68      # voice onset 검출 (sensitive)
+SPEECH_DETECT_DB     = -40      # loud speech body 검출 (strict, zero-fill용)
+RMS_WINDOW_MS        = 10
+PEAK_NORMALIZE_DB    = -1.0
+
+# Stage 2 timing
+ONSET_SAFETY_MS      = 320      # Pullback (Stage 1 pad와 짝)
+OFFSET_SAFETY_MS     = 120
+SUSTAINED_SILENCE_MS = 1000
+PRESPEECH_PAD_MS     = 100      # zero-fill 영역 길이
+
+# Stage 2 envelope
+PREATTACK_SILENCE_MS = 400
+TAIL_SILENCE_MS      = 730
+FADE_MS              = 3        # speech boundary fade-in
+FADE_OUT_MS          = 5        # tail fade-out
+```
+

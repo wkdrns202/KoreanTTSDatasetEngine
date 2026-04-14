@@ -106,19 +106,21 @@ SKIP_PENALTY = 0.01          # Similarity penalty per skipped script line
 MATCH_THRESHOLD = 0.50       # Minimum adjusted similarity to accept a match
 CONSEC_FAIL_LIMIT = 10       # After N consecutive failures, try re-sync
 MAX_MERGE = 5                # Maximum consecutive segments to merge
-AUDIO_PAD_MS = 50            # Base padding in ms (50ms proven optimal; 100ms caused bleed in Iter 4a)
+AUDIO_PAD_MS = 320           # Base padding in ms (2026-04-14 rev2: 80→320 manually verified in DAW — minimum 320ms pre-onset content needed to reliably preserve Korean consonant attacks)
 MIN_GAP_FOR_PAD_MS = 30      # If gap to neighbor < this, zero-pad on that edge (30ms for dense Korean)
 TAIL_EXTEND_MAX_MS = 400     # Max extra right padding to reach silence (prevents mid-speech cutoff)
-FADE_MS = 10                 # Fade-in duration in ms
+FADE_MS = 3                  # Fade-in duration in ms (2026-04-14: 10→3 after onset safety refactor; longer fade-in was attenuating the consonant attack that voiced region captures)
 FADE_OUT_MS = 5              # Fade-out duration in ms (shorter to preserve speech tail)
 # Stage 2: Post-processing / R6 Audio Envelope
 PREATTACK_SILENCE_MS = 400    # Pre-attack silence (ms) — generous for TTS training
 TAIL_SILENCE_MS = 730        # Tail silence (ms) — generous for TTS training
-SILENCE_THRESHOLD_DB = -65   # RMS threshold for silence detection (dB, matches recording noise floor)
+SILENCE_THRESHOLD_DB = -68   # RMS threshold for silence detection (2026-04-14: -65→-68 to catch softer Korean consonant attacks that Stage 2 onset detection was classifying as silence)
 RMS_WINDOW_MS = 10           # RMS sliding window size (ms)
 PEAK_NORMALIZE_DB = -1.0     # Peak normalization target (dB)
-ONSET_SAFETY_MS = 30         # Pull onset back by this much to preserve consonant attacks
+ONSET_SAFETY_MS = 320        # Pull onset back (2026-04-14 rev2: 30→320) paired with AUDIO_PAD_MS=320 so Stage 2 pullback actually reaches into Stage 1's padded region instead of clamping to chunk start
 OFFSET_SAFETY_MS = 120       # Extend offset to preserve natural speech decay (120ms for Korean endings)
+PRESPEECH_PAD_MS = 100       # (2026-04-14 rev2) Post voice-detection: trim pre-speech ambient to this length and zero-fill. Combined with 400ms envelope = 500ms total pre-speech silence (TTS-standard prosodic prefix, zero ambient noise)
+SPEECH_DETECT_DB = -40       # Stricter threshold than SILENCE_THRESHOLD_DB (-68) used ONLY to locate the *loud speech body* start (vowel) for the trim+zerofill step. -68 detects ambient, which defeats the purpose of zero-fill. -40 reliably identifies where speech becomes clearly audible.
 
 # Set up logging
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -533,30 +535,70 @@ def post_process_wavs(wav_dir, wav_filter=None):
                     samples = samples[new_start:new_end + 1]
 
             # --- Step 2-3: Voice onset/offset detection + trim ---
-            # Apply safety margins to preserve consonant attacks and word-final sounds
-            onset, offset = find_voice_onset_offset(samples, sr)
+            # Apply safety margins to preserve consonant attacks and word-final sounds.
+            # Capture the *detected* speech onset before safety pullback — we need
+            # it in Step 3.5 to locate where actual speech starts inside voiced.
+            speech_onset_abs, offset = find_voice_onset_offset(samples, sr)
             onset_safety = int(sr * ONSET_SAFETY_MS / 1000)
             offset_safety = int(sr * OFFSET_SAFETY_MS / 1000)
-            onset = max(0, onset - onset_safety)
+            onset = max(0, speech_onset_abs - onset_safety)
             offset = min(len(samples), offset + offset_safety)
             if onset >= offset:
                 # Degenerate — keep as-is but still apply envelope
                 voiced = samples
+                speech_pos = 0
             else:
                 voiced = samples[onset:offset]
+                # Speech start position inside voiced region (ambient precedes it)
+                speech_pos = speech_onset_abs - onset
 
             if len(voiced) == 0:
                 logger.debug(f"Empty voiced region: {os.path.basename(wav_path)}")
                 errors += 1
                 continue
 
-            # --- Step 4: Fade (on voiced region only) ---
-            actual_fade_in = min(fade_in_samples, len(voiced) // 4)
+            # --- Step 3.5: Pre-speech ambient trim + zero-fill ---
+            # Locate the *loud speech body* using a stricter threshold than
+            # SILENCE_THRESHOLD_DB, because that one (-68 dB) catches room
+            # ambient and defeats the zero-fill intent. SPEECH_DETECT_DB (-40
+            # dB) reliably identifies where speech becomes clearly audible.
+            # Then keep PRESPEECH_PAD_MS of the region before the loud speech
+            # body and replace it with absolute silence (sample=0).
+            win = int(sr * RMS_WINDOW_MS / 1000)
+            nw = len(voiced) // win
+            body_pos = 0
+            if nw >= 5:
+                voiced_f64 = voiced.astype(np.float64, copy=False)
+                trimmed = voiced_f64[:nw * win].reshape(nw, win)
+                rms_v = np.sqrt(np.mean(trimmed ** 2, axis=1) + 1e-12)
+                db_v = 20 * np.log10(np.maximum(rms_v, 1e-10))
+                loud_idx = np.where(db_v >= SPEECH_DETECT_DB)[0]
+                if len(loud_idx) > 0:
+                    body_pos = int(loud_idx[0]) * win
+            target_pre = int(sr * PRESPEECH_PAD_MS / 1000)
+            if body_pos > target_pre:
+                trim = body_pos - target_pre
+                voiced = voiced[trim:]
+                body_pos = target_pre
+            # body_pos may be less than target_pre if Stage 1 didn't deliver
+            # enough pre-speech content or Stage 2 clamped to chunk start.
+            body_pos = max(0, min(body_pos, len(voiced)))
+            if body_pos > 0:
+                voiced[:body_pos] = 0.0
+            # Use body_pos (not speech_pos) for fade placement below; these
+            # should coincide on normal lines.
+            speech_pos = body_pos
+
+            # --- Step 4: Fade (applied at the speech boundary, not at voiced[0]) ---
+            # voiced[0:speech_pos] is now pure silence; fade from 0 into the
+            # actual speech attack at voiced[speech_pos:]. Tail fade unchanged.
+            actual_fade_in = min(fade_in_samples,
+                                 max(0, len(voiced) - speech_pos) // 4)
             actual_fade_out = min(fade_out_samples, len(voiced) // 4)
 
-            if actual_fade_in > 0:
+            if actual_fade_in > 0 and speech_pos + actual_fade_in <= len(voiced):
                 fade_in_curve = make_raised_cosine_fade(actual_fade_in)
-                voiced[:actual_fade_in] *= fade_in_curve
+                voiced[speech_pos:speech_pos + actual_fade_in] *= fade_in_curve
             if actual_fade_out > 0:
                 fade_out_curve = make_raised_cosine_fade(actual_fade_out)[::-1]
                 voiced[-actual_fade_out:] *= fade_out_curve
