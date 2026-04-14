@@ -592,7 +592,9 @@ def post_process_wavs(wav_dir, wav_filter=None):
 # ============================================================
 
 def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None,
-                    resume=True, device_override=None):
+                    resume=True, device_override=None,
+                    audio_dir=None, output_wav_dir=None, metadata_path=None,
+                    start_line=1):
     """Main alignment and splitting pipeline.
 
     Groups audio files by script number and processes each script sequentially,
@@ -606,13 +608,32 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None
         range_filter: If set, tuple (start, end) — only process the audio file
                       whose filename range matches (e.g., (1, 162))
         resume: If True, resume from checkpoint if available
+        audio_dir: Override input audio directory (default: rawdata/audio/)
+        output_wav_dir: Override output WAV directory. When supplied, skips the
+                        versioned-output-dir creation and writes directly here.
+        metadata_path: Override metadata script.txt path (paired with output_wav_dir)
+        start_line: If > 1, override the natural min_audio_line and begin matching
+                    from this script line. Used by the orchestrator when the user
+                    wants to resume/skip past a prefix that was already aligned
+                    (e.g. --start-line 201). Covered_lines is filtered accordingly
+                    so the reported total reflects the actual work scope.
     """
     global OUTPUT_WAV_DIR, METADATA_PATH
 
-    # Create versioned output directory — never overwrite existing data
-    tag = f"Script{script_filter}" if script_filter else None
-    OUTPUT_WAV_DIR, METADATA_PATH, run_dir = _make_versioned_output_dir(BASE_DIR, tag=tag)
-    logger.info(f"Output directory: {run_dir}")
+    # Resolve input/output directories — caller can override for orchestration
+    effective_audio_dir = audio_dir if audio_dir else RAW_AUDIO_DIR
+
+    if output_wav_dir is not None:
+        OUTPUT_WAV_DIR = output_wav_dir
+        METADATA_PATH = metadata_path or os.path.join(
+            os.path.dirname(output_wav_dir), "script.txt")
+        run_dir = os.path.dirname(output_wav_dir)
+        logger.info(f"Output directory (caller-supplied): {run_dir}")
+    else:
+        tag = f"Script{script_filter}" if script_filter else None
+        OUTPUT_WAV_DIR, METADATA_PATH, run_dir = _make_versioned_output_dir(
+            BASE_DIR, tag=tag)
+        logger.info(f"Output directory: {run_dir}")
 
     os.makedirs(OUTPUT_WAV_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
@@ -622,8 +643,19 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None
     logger.info(f"[{device}] Loading Whisper model ({model_size})...")
     model = whisper.load_model(model_size, device=device)
 
+    # Normalize script_filter: accept None, int, or iterable of ints.
+    # This lets the orchestrator (pipeline_manager) pass a list of scripts
+    # and have them all processed in a SINGLE align_and_split call, instead
+    # of looping per-script and triggering the metadata overwrite bug.
+    if script_filter is None:
+        _script_filter_set = None
+    elif isinstance(script_filter, int):
+        _script_filter_set = {script_filter}
+    else:
+        _script_filter_set = set(int(s) for s in script_filter)
+
     # Find and group audio files by script number
-    audio_files = sorted(glob.glob(os.path.join(RAW_AUDIO_DIR, "*.wav")))
+    audio_files = sorted(glob.glob(os.path.join(effective_audio_dir, "*.wav")))
     if not audio_files:
         logger.error("No audio files found in rawdata/audio/")
         return
@@ -636,7 +668,7 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None
         if script_no is None:
             logger.warning(f"Skipping (filename format mismatch): {filename}")
             continue
-        if script_filter is not None and script_no != script_filter:
+        if _script_filter_set is not None and script_no not in _script_filter_set:
             continue
         if range_filter is not None:
             if (start_idx, end_idx) != range_filter:
@@ -727,17 +759,23 @@ def align_and_split(model_size=MODEL_SIZE, script_filter=None, range_filter=None
         audio_file_list = scripts[script_no]
         min_audio_line = min(af[0] for af in audio_file_list)
         max_audio_line = max(af[1] for af in audio_file_list)
+        # Respect caller-supplied start_line: clamps to >= min_audio_line so we
+        # never try to match lines that no audio file claims to cover.
+        effective_start = max(min_audio_line, start_line)
         covered_lines = {ln: txt for ln, txt in all_sentences.items()
-                         if min_audio_line <= ln <= max_audio_line}
+                         if effective_start <= ln <= max_audio_line}
         total_target_lines += len(covered_lines)
 
         logger.info(f"\n{'='*50}")
         logger.info(f"Script_{script_no}: {len(all_sentences)} total lines (enc: {enc})")
         logger.info(f"  Audio files: {len(audio_file_list)}")
-        logger.info(f"  Audio covers lines: {min_audio_line}-{max_audio_line} ({len(covered_lines)} lines)")
+        if effective_start > min_audio_line:
+            logger.info(f"  Start override: start_line={start_line} -> effective_start={effective_start}")
+        logger.info(f"  Audio covers lines: {min_audio_line}-{max_audio_line} "
+                    f"(matching from {effective_start}, {len(covered_lines)} lines)")
 
         # Maintain a single current_script_line across ALL audio files for this script
-        current_script_line = min_audio_line
+        current_script_line = effective_start
         script_matched = 0
         script_skipped_entries = []
 

@@ -5,12 +5,16 @@ TTS Dataset Pipeline Manager
 End-to-end workflow for Korean TTS dataset preparation.
 
 Pipeline Steps:
-  1. DISCOVER  - Find raw audio files and matching scripts
-  2. ALIGN     - Transcribe with Whisper and match to script lines
-  3. SPLIT     - Extract matched segments as individual WAV files
-  4. VALIDATE  - Verify dataset integrity (WAVs <-> metadata)
-  5. ORPHANS   - Collect unmatched WAVs -> rawdata/missed audios and script/
-  6. REPORT    - Generate timestamped report -> TaskLogs/
+  1. DISCOVER - Find raw audio files and matching scripts (orchestrator)
+  2. ALIGN    - Delegated entirely to align_and_split.align_and_split().
+                That function performs Whisper load, transcription, forward-
+                only alignment, WAV slicing, AND Stage 2 post-processing
+                (R6 envelope, asymmetric fade, sustained-silence voice offset,
+                peak normalization).  pipeline_manager MUST NOT duplicate any
+                of this logic — see logs/engineering_note_2026-04-14.md.
+  3. VALIDATE - Verify dataset integrity (WAVs <-> metadata)
+  4. ORPHANS  - Collect unmatched WAVs -> rawdata/missed audios and script/
+  5. REPORT   - Generate timestamped report -> TaskLogs/
 
 Usage:
   python pipeline_manager.py                          # Process all scripts
@@ -27,7 +31,6 @@ import os
 import sys
 import re
 import json
-import difflib
 import shutil
 import warnings
 import datetime
@@ -44,78 +47,59 @@ warnings.filterwarnings("ignore")
 try:
     import static_ffmpeg
     static_ffmpeg.add_paths()
-    import whisper
-    from pydub import AudioSegment
 except ImportError:
     print("Installing requirements...")
     os.system("pip install openai-whisper pydub static-ffmpeg torch")
     import static_ffmpeg
     static_ffmpeg.add_paths()
-    import whisper
-    from pydub import AudioSegment
+
+# All alignment / splitting / post-processing is implemented in
+# align_and_split.py. pipeline_manager is a pure orchestrator — NEVER
+# reimplement Stage 1 or Stage 2 logic here. See 2026-04-14 engineering
+# note for the incident that made this rule non-negotiable.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from align_and_split import align_and_split as _run_align_and_split
 
 
-# ============================================================
-# ALIGNMENT CONFIGURATION (proven optimal for Korean TTS)
-# ============================================================
-SEG_SEARCH_WINDOW = 25      # Search up to N lines forward from current position
-MATCH_THRESHOLD = 0.25      # Minimum similarity score to accept a match
-SKIP_PENALTY = 0.01         # Penalty per skipped line (distance cost)
-CONSEC_FAIL_LIMIT = 5       # Consecutive unmatched segments before advancing
-AUDIO_PAD_MS = 50           # Milliseconds of padding on each side of extracted audio
+# NOTE: Alignment parameters (SEG_SEARCH_WINDOW, SKIP_PENALTY, MATCH_THRESHOLD,
+# CONSEC_FAIL_LIMIT, AUDIO_PAD_MS, etc.) live in align_and_split.py. Do NOT
+# redeclare them here — the orchestrator must not fork parameter state.
 
 
-def normalize_text(text):
-    """Remove punctuation, keep Korean/English/numbers for comparison."""
-    return re.sub(r'[^가-힣a-zA-Z0-9]', '', text)
-
-
-def load_script(script_path, start_line=1):
-    """Load script file with proper Korean encoding.
-    Returns (dict {line_num: text}, encoding_used)."""
-    encodings = ['utf-8-sig', 'utf-8', 'cp949', 'euc-kr']
-    for enc in encodings:
-        try:
-            with open(script_path, 'r', encoding=enc) as f:
-                lines = f.readlines()
-            if lines:
-                sentences = {}
-                line_num = 0
-                for line in lines:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    line_num += 1
-                    if line_num >= start_line:
-                        sentences[line_num] = line
-                return sentences, enc
-        except (UnicodeDecodeError, UnicodeError):
-            continue
-    return {}, None
+# NOTE: Script parsing lives exclusively in align_and_split.load_script().
+# The orchestrator does not read script files — it only checks existence and
+# forwards start_line through _run_align_and_split(start_line=...). Any local
+# copy of encoding-sniffing logic would fork knowledge and silently drift.
 
 
 class PipelineManager:
     """Orchestrates the full TTS dataset alignment pipeline."""
 
-    def __init__(self, base_dir, model_size="medium"):
+    def __init__(self, base_dir, model_size="medium",
+                 audio_dir=None, output_dir=None):
         self.base_dir = Path(base_dir)
         self.model_size = model_size
         self.run_timestamp = datetime.datetime.now()
 
-        # Directory structure
-        self.audio_dir = self.base_dir / "rawdata" / "audio"
+        # Directory structure (supports override for isolated runs)
+        self.audio_dir = Path(audio_dir) if audio_dir else (
+            self.base_dir / "rawdata" / "audio")
         self.scripts_dir = self.base_dir / "rawdata" / "Scripts"
-        self.output_dir = self.base_dir / "datasets"
+        self.output_dir = Path(output_dir) if output_dir else (
+            self.base_dir / "datasets")
         self.wavs_dir = self.output_dir / "wavs"
         self.script_txt = self.output_dir / "script.txt"
         self.missed_dir = self.base_dir / "rawdata" / "missed audios and script"
         self.missed_targets_dir = self.missed_dir / "TargetScripts"
         self.tasklogs_dir = self.base_dir / "TaskLogs"
+        # Checkpoints co-locate with output_dir so independent runs don't collide
+        self.checkpoint_dir = self.output_dir
 
-        # Runtime state
-        self.model = None
+        # Runtime state (no model — align_and_split owns Whisper lifecycle)
         self.all_results = {}       # {script_id: result_dict}
         self.all_skipped = []       # List of skipped line log entries
+                                     # (align_and_split writes its own log;
+                                     # kept for CLI compat, usually empty)
 
     # ============================================================
     # STEP 1: DISCOVER
@@ -160,293 +144,121 @@ class PipelineManager:
         return audio_groups, script_files
 
     # ============================================================
-    # STEP 2: LOAD MODEL
+    # STEP 2: DELEGATED TO align_and_split.align_and_split()
     # ============================================================
-    def load_model(self):
-        """Load Whisper model on CUDA. Exits if no GPU available."""
-        if self.model is not None:
-            return
-
-        if not torch.cuda.is_available():
-            print("\n[FATAL] CUDA is NOT available!")
-            print("This pipeline requires a CUDA-capable GPU.")
-            sys.exit(1)
-
-        print(f"  GPU: {torch.cuda.get_device_name(0)}")
-        print(f"  Loading Whisper {self.model_size} on CUDA...")
-        self.model = whisper.load_model(self.model_size, device="cuda")
-        print("  Model loaded.")
-
-    # ============================================================
-    # CHECKPOINT MANAGEMENT
-    # ============================================================
-    def _checkpoint_path(self, script_id):
-        return self.base_dir / f"checkpoint_pipeline_Script_{script_id}.json"
-
-    def _load_checkpoint(self, script_id):
-        path = self._checkpoint_path(script_id)
-        if path.exists():
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return None
-
-    def _save_checkpoint(self, script_id, data):
-        path = self._checkpoint_path(script_id)
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-    def _clear_checkpoint(self, script_id):
-        path = self._checkpoint_path(script_id)
-        if path.exists():
-            path.unlink()
+    # Whisper loading, transcription, alignment, WAV slicing, and Stage 2
+    # post-processing (R6 envelope, asymmetric fade, sustained-silence voice
+    # offset, peak normalization) are all implemented inside
+    # align_and_split.align_and_split(). The orchestrator simply calls it
+    # with the appropriate audio_dir / output_wav_dir overrides and lets the
+    # single source of truth handle the actual work.
+    #
+    # DO NOT add a local Whisper load, alignment loop, or WAV extractor here.
+    # If you need to change alignment behavior, edit align_and_split.py.
 
     # ============================================================
     # STEP 3: ALIGN & SPLIT (core algorithm)
     # ============================================================
-    def align_script(self, script_id, audio_files, script_path,
+    def align_script(self, script_id, audio_files,
                      start_line=1, reset=False):
-        """Align and split all audio files for one script.
-
-        Uses forward-only sequential matching:
-        - 25-line search window from current position
-        - 0.01 skip penalty per line distance
-        - Segment merging (1, 2, 3 consecutive Whisper segments)
-        - Checkpoint saved after each audio file
+        """Delegate alignment + split + Stage 2 post-processing to
+        align_and_split.align_and_split().
 
         Returns (matched_count, skipped_entries_list, total_script_lines).
+
+        DEPRECATED PER-SCRIPT ENTRY POINT — kept for test compat but
+        pipeline_manager.run() now calls align_and_split ONCE with a full
+        list of script_ids via _run_align_and_split_batch(). See the
+        2026-04-14 metadata-overwrite incident: per-script iteration caused
+        script.txt to be rewritten on each call, discarding prior scripts'
+        entries. Only use this method for isolated single-script runs.
         """
-        # Load script text
-        sentences, enc = load_script(str(script_path), start_line=start_line)
-        if not sentences:
-            print(f"  [ERROR] Cannot load script: {script_path}")
+        print(f"  Script_{script_id}: delegating to align_and_split "
+              f"(audio_dir={self.audio_dir}, output_wav_dir={self.wavs_dir}, "
+              f"start_line={start_line})")
+
+        try:
+            matched, _, total = _run_align_and_split(
+                model_size=self.model_size,
+                script_filter=script_id,
+                resume=not reset,
+                audio_dir=str(self.audio_dir),
+                output_wav_dir=str(self.wavs_dir),
+                metadata_path=str(self.script_txt),
+                start_line=start_line,
+            )
+        except Exception as e:
+            print(f"  [ERROR] align_and_split failed for Script_{script_id}: {e}")
             return 0, [], 0
 
-        total_sentences = max(sentences.keys())
-        print(f"  Script_{script_id}: {len(sentences)} lines (encoding: {enc})")
-        print(f"  Audio files: {len(audio_files)}")
+        rate = (matched / total * 100) if total else 0
+        print(f"  Script_{script_id} done: {matched}/{total} ({rate:.1f}%)")
+        return matched, [], total
 
-        # Checkpoint handling
-        checkpoint = None if reset else self._load_checkpoint(script_id)
+    def _run_align_and_split_batch(self, script_ids, start_line, reset):
+        """Single-call delegation covering ALL scripts in this batch.
 
-        if checkpoint:
-            resume_file_idx = checkpoint.get('next_file_idx', 0)
-            resume_script_line = checkpoint.get('next_script_line', start_line)
-            total_matched = checkpoint.get('total_matched', 0)
-            print(f"  [RESUME] file #{resume_file_idx}, line {resume_script_line}, "
-                  f"matched {total_matched}")
-        else:
-            resume_file_idx = 0
-            resume_script_line = start_line
-            total_matched = 0
+        This is the correct orchestration: align_and_split is designed to
+        process multiple scripts in one run, accumulating metadata into
+        script.txt as it goes. Looping per-script and calling it n times
+        triggers the metadata-overwrite bug.
+        """
+        filt = None
+        if script_ids:
+            filt = script_ids if len(script_ids) > 1 else script_ids[0]
+        print(f"  Batch delegation: script_filter={filt}, "
+              f"audio_dir={self.audio_dir}, output_wav_dir={self.wavs_dir}")
+        try:
+            matched, skipped, total = _run_align_and_split(
+                model_size=self.model_size,
+                script_filter=filt,
+                resume=not reset,
+                audio_dir=str(self.audio_dir),
+                output_wav_dir=str(self.wavs_dir),
+                metadata_path=str(self.script_txt),
+                start_line=start_line,
+            )
+        except Exception as e:
+            print(f"  [ERROR] align_and_split failed: {e}")
+            return 0, 0, 0
+        print(f"  Batch done: matched={matched}, skipped={skipped}, "
+              f"target_lines={total}")
+        return matched, skipped, total
 
-        # Skipped lines log
-        skipped_log_path = self.base_dir / f"skipped_Script_{script_id}.log"
-        skipped_entries = []
+    def _compute_per_script_stats(self, audio_groups):
+        """Build self.all_results by parsing script.txt (truth) + audio
+        coverage ranges from filenames. Replaces the per-script bookkeeping
+        that used to happen in the now-removed alignment loop.
 
-        if resume_file_idx == 0:
-            with open(skipped_log_path, 'w', encoding='utf-8') as f:
-                f.write("AudioFile|ScriptLine|Reason|ScriptText|WhisperText\n")
-
-        # Ensure output directory exists
-        self.wavs_dir.mkdir(parents=True, exist_ok=True)
-
-        # Load existing metadata filenames to avoid duplicates
-        existing_meta = set()
+        total_lines is computed from audio coverage (max_audio_line -
+        min_audio_line + 1) rather than full script length, so the reported
+        rate reflects what was actually reachable given the audio.
+        """
+        per_script_matched = {}
         if self.script_txt.exists():
             with open(self.script_txt, 'r', encoding='utf-8') as f:
                 for line in f:
-                    line = line.strip()
-                    if '|' in line:
-                        existing_meta.add(line.split('|')[0])
+                    m = re.match(r'Script_(\d+)_', line)
+                    if m:
+                        sid = int(m.group(1))
+                        per_script_matched[sid] = per_script_matched.get(sid, 0) + 1
+        for sid, files in audio_groups.items():
+            min_line = min(af[0] for af in files)
+            max_line = max(af[1] for af in files)
+            covered = max_line - min_line + 1
+            self.all_results[sid] = {
+                'matched': per_script_matched.get(sid, 0),
+                'skipped': 0,
+                'total_lines': covered,
+                'audio_files': len(files),
+            }
 
-        current_script_line = resume_script_line
-        new_entries = []
-
-        # Process each audio file sequentially
-        for file_idx in range(resume_file_idx, len(audio_files)):
-            start_ln, end_ln, audio_path = audio_files[file_idx]
-            audio_filename = audio_path.name
-
-            print(f"\n  [{file_idx+1}/{len(audio_files)}] {audio_filename}")
-            print(f"    Expected lines: {start_ln}-{end_ln}")
-            print(f"    Current script line: {current_script_line}")
-
-            # Transcribe with Whisper
-            print(f"    Transcribing...", end=" ", flush=True)
-            result = self.model.transcribe(
-                str(audio_path), language="ko", verbose=False, fp16=True
-            )
-            segments = result['segments']
-            print(f"{len(segments)} segments")
-
-            if not segments:
-                print(f"    [WARN] No segments found, skipping file")
-                continue
-
-            # Load audio for slicing
-            audio = AudioSegment.from_wav(str(audio_path))
-
-            file_matched = 0
-            file_skipped = []
-            seg_idx = 0
-            used_segments = set()
-            consec_fails = 0
-
-            while seg_idx < len(segments) and current_script_line <= total_sentences:
-                if seg_idx in used_segments:
-                    seg_idx += 1
-                    continue
-
-                seg = segments[seg_idx]
-                seg_text = seg['text'].strip()
-                norm_seg = normalize_text(seg_text)
-
-                if len(norm_seg) < 2:
-                    seg_idx += 1
-                    continue
-
-                # Try merge combinations: 1, 2, or 3 consecutive segments
-                best_score = 0
-                best_line = None
-                best_line_text = ""
-                best_merge_count = 1
-                best_end_time = seg['end']
-
-                for merge_count in [1, 2, 3]:
-                    if seg_idx + merge_count > len(segments):
-                        break
-
-                    merged_segs = segments[seg_idx:seg_idx + merge_count]
-                    merged_text = " ".join(s['text'].strip() for s in merged_segs)
-                    norm_merged = normalize_text(merged_text)
-
-                    if len(norm_merged) < 3:
-                        continue
-
-                    # Forward-only search window
-                    search_start = current_script_line
-                    search_end = min(total_sentences + 1,
-                                     current_script_line + SEG_SEARCH_WINDOW)
-
-                    for line_num in range(search_start, search_end):
-                        if line_num not in sentences:
-                            continue
-                        target_text = sentences[line_num]
-                        norm_target = normalize_text(target_text)
-
-                        if len(norm_target) < 2:
-                            continue
-
-                        score = difflib.SequenceMatcher(
-                            None, norm_merged, norm_target
-                        ).ratio()
-
-                        # Penalize skipping lines (prefer closer matches)
-                        skip_count = line_num - current_script_line
-                        adjusted_score = score - (skip_count * SKIP_PENALTY)
-
-                        if adjusted_score > best_score:
-                            best_score = adjusted_score
-                            best_line = line_num
-                            best_line_text = target_text
-                            best_merge_count = merge_count
-                            best_end_time = merged_segs[-1]['end']
-
-                if best_score >= MATCH_THRESHOLD and best_line is not None:
-                    consec_fails = 0
-
-                    # Log skipped lines between current position and match
-                    for skip_line in range(current_script_line, best_line):
-                        if skip_line in sentences:
-                            entry = (f"{audio_filename}|{skip_line}|SKIPPED"
-                                     f"|{sentences[skip_line]}|")
-                            file_skipped.append(entry)
-
-                    # Extract audio chunk with padding
-                    start_ms = max(0, int(seg['start'] * 1000) - AUDIO_PAD_MS)
-                    end_ms = min(len(audio),
-                                 int(best_end_time * 1000) + AUDIO_PAD_MS)
-                    chunk = audio[start_ms:end_ms]
-
-                    # Save WAV file
-                    out_filename = f"Script_{script_id}_{best_line:04d}.wav"
-                    out_path = self.wavs_dir / out_filename
-
-                    if out_path.exists():
-                        try:
-                            out_path.unlink()
-                        except Exception:
-                            pass
-                    try:
-                        chunk.export(str(out_path), format="wav")
-                    except PermissionError:
-                        print(f"    [WARN] Cannot write {out_filename}")
-
-                    # Record metadata entry (deduplicate)
-                    if out_filename not in existing_meta:
-                        new_entries.append(f"{out_filename}|{best_line_text}")
-                        existing_meta.add(out_filename)
-
-                    file_matched += 1
-                    total_matched += 1
-                    current_script_line = best_line + 1
-
-                    # Mark consumed segments
-                    for i in range(best_merge_count):
-                        used_segments.add(seg_idx + i)
-                    seg_idx += best_merge_count
-                else:
-                    consec_fails += 1
-
-                    if (consec_fails >= CONSEC_FAIL_LIMIT
-                            and current_script_line <= total_sentences):
-                        if current_script_line in sentences:
-                            entry = (f"{audio_filename}|{current_script_line}"
-                                     f"|NO_MATCH|{sentences[current_script_line]}"
-                                     f"|{seg_text}")
-                            file_skipped.append(entry)
-                        current_script_line += 1
-                        consec_fails = 0
-
-                    seg_idx += 1
-
-            # Write skipped lines to log
-            if file_skipped:
-                with open(skipped_log_path, 'a', encoding='utf-8') as f:
-                    for line in file_skipped:
-                        f.write(line + "\n")
-            skipped_entries.extend(file_skipped)
-
-            print(f"    Matched: {file_matched}, Skipped: {len(file_skipped)}")
-            print(f"    Total matched so far: {total_matched}")
-
-            # Save checkpoint after each file
-            self._save_checkpoint(script_id, {
-                'next_file_idx': file_idx + 1,
-                'next_script_line': current_script_line,
-                'total_matched': total_matched,
-                'last_file': audio_filename
-            })
-
-        # Append new entries to script.txt
-        if new_entries:
-            with open(self.script_txt, 'a', encoding='utf-8') as f:
-                for entry in new_entries:
-                    f.write(entry + "\n")
-            print(f"\n  Appended {len(new_entries)} new entries to script.txt")
-
-        # Clear checkpoint on completion
-        self._clear_checkpoint(script_id)
-
-        match_rate = (total_matched / len(sentences) * 100
-                      if sentences else 0)
-        print(f"  Script_{script_id} done: {total_matched}/{len(sentences)} "
-              f"({match_rate:.1f}%)")
-
-        return total_matched, skipped_entries, len(sentences)
+    # ============================================================
+    # (2026-04-14 refactor) The 240-line inline alignment block that
+    # previously lived here is gone. It duplicated align_and_split.py
+    # without the Stage 2 post-processing, which caused a catastrophic
+    # envelope regression on the 2026-04-13 batch. Never reintroduce.
+    # ============================================================
 
     # ============================================================
     # STEP 4: VALIDATE
@@ -609,9 +421,20 @@ class PipelineManager:
         lines.append(f"Date: {self.run_timestamp:%Y-%m-%d %H:%M:%S}")
         lines.append(f"Tool: Whisper ASR ({self.model_size} model, CUDA"
                       f" - {torch.cuda.get_device_name(0)})")
-        lines.append(f"Config: window={SEG_SEARCH_WINDOW}, "
-                      f"threshold={MATCH_THRESHOLD}, "
-                      f"penalty={SKIP_PENALTY}")
+        # Pull current alignment config from the authoritative module
+        # so the report always reflects align_and_split.py, not a stale copy.
+        try:
+            import align_and_split as _aas
+            lines.append(
+                f"Config: window={_aas.SEG_SEARCH_WINDOW}, "
+                f"threshold={_aas.MATCH_THRESHOLD}, "
+                f"penalty={_aas.SKIP_PENALTY}, "
+                f"pad={_aas.AUDIO_PAD_MS}ms, "
+                f"preattack={_aas.PREATTACK_SILENCE_MS}ms, "
+                f"tail={_aas.TAIL_SILENCE_MS}ms, "
+                f"offset_safety={_aas.OFFSET_SAFETY_MS}ms")
+        except Exception as e:
+            lines.append(f"Config: (unavailable — {e})")
         lines.append("")
 
         # Alignment results
@@ -695,7 +518,7 @@ class PipelineManager:
             return
 
         # Step 1: Discover
-        print(f"\n[Step 1/6] Discovering audio files and scripts...")
+        print(f"\n[Step 1/5] Discovering audio files and scripts...")
         audio_groups, script_files = self.discover(script_ids)
 
         if not audio_groups:
@@ -712,52 +535,50 @@ class PipelineManager:
             for start, end, path in files:
                 print(f"    {path.name}  (lines {start}-{end})")
 
-        # Step 2: Load model
-        print(f"\n[Step 2/6] Loading Whisper model...")
-        self.load_model()
+        # Step 2: SINGLE delegated call to align_and_split covering ALL
+        # scripts in this batch. Whisper load, alignment, WAV slicing, and
+        # Stage 2 post-processing all happen inside that one call, with
+        # metadata accumulated across scripts into a single script.txt.
+        #
+        # DO NOT iterate per-script here — doing so made align_and_split
+        # write script.txt once per call, overwriting each previous
+        # script's entries. Incident: 2026-04-14.
+        print(f"\n[Step 2/5] Delegating full alignment + Stage 2 post-"
+              f"processing to align_and_split (single call)...")
 
-        # Step 3: Align & Split
-        print(f"\n[Step 3/6] Aligning and splitting audio...")
+        batch_script_ids = sorted(
+            sid for sid in audio_groups.keys() if sid in script_files)
+        missing = sorted(set(audio_groups.keys()) - set(batch_script_ids))
+        for sid in missing:
+            print(f"  [SKIP] Script_{sid}: no script file found")
 
-        for sid in sorted(audio_groups.keys()):
-            if sid not in script_files:
-                print(f"\n  [SKIP] Script_{sid}: no script file found")
-                continue
+        if not batch_script_ids:
+            print("  No processable scripts in batch.")
+            return
 
-            print(f"\n  {'='*50}")
-            print(f"  Processing Script_{sid}")
-            print(f"  {'='*50}")
+        self._run_align_and_split_batch(
+            script_ids=batch_script_ids,
+            start_line=start_line,
+            reset=reset,
+        )
+        # Rebuild per-script bookkeeping from script.txt (truth after batch)
+        self._compute_per_script_stats(
+            {sid: audio_groups[sid] for sid in batch_script_ids})
 
-            # Determine start line for this script
-            sl = start_line if start_line > 1 else 1
-
-            matched, skipped, total = self.align_script(
-                sid, audio_groups[sid], script_files[sid],
-                start_line=sl, reset=reset
-            )
-
-            self.all_results[sid] = {
-                'matched': matched,
-                'skipped': len(skipped),
-                'total_lines': total,
-                'audio_files': len(audio_groups[sid])
-            }
-            self.all_skipped.extend(skipped)
-
-        # Step 4: Validate
-        print(f"\n[Step 4/6] Validating dataset...")
+        # Step 3: Validate
+        print(f"\n[Step 3/5] Validating dataset...")
         validation = self.validate()
 
-        # Step 5: Collect orphans
-        print(f"\n[Step 5/6] Collecting orphan WAVs...")
+        # Step 4: Collect orphans
+        print(f"\n[Step 4/5] Collecting orphan WAVs...")
         if validation['orphan_wav']:
             self.collect_orphans(validation['orphan_wav'])
             self.write_missed_lines(self.all_skipped)
         else:
             print("  No orphans found. Dataset is clean.")
 
-        # Step 6: Report
-        print(f"\n[Step 6/6] Generating report...")
+        # Step 5: Report
+        print(f"\n[Step 5/5] Generating report...")
         self.generate_report(validation)
 
         # Final summary
@@ -822,11 +643,21 @@ Examples:
     parser.add_argument(
         "--collect-orphans", action="store_true",
         help="Validate and collect orphan WAVs to missed audios folder")
+    parser.add_argument(
+        "--audio-dir", default=None,
+        help="Override audio input directory (default: rawdata/audio)")
+    parser.add_argument(
+        "--output-dir", default=None,
+        help="Override output directory (default: datasets). "
+             "Use this to write to a versioned subdir without touching base datasets/")
 
     args = parser.parse_args()
 
     base_dir = Path(__file__).parent.parent
-    manager = PipelineManager(base_dir, model_size=args.model)
+    manager = PipelineManager(
+        base_dir, model_size=args.model,
+        audio_dir=args.audio_dir, output_dir=args.output_dir,
+    )
     manager.run(
         script_ids=args.script,
         start_line=args.start_line,
