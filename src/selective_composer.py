@@ -69,6 +69,11 @@ SNR_REFERENCE_DB = 40.0       # Score saturates at this SNR
 
 # Boundary scoring
 SILENCE_THRESHOLD_DB = -40
+SPEECH_DETECT_DB = -40         # (2026-04-15) Loud-body detection for D8 S_continuity.
+                                # Matches align_and_split.SPEECH_DETECT_DB intentionally —
+                                # both modules use the same threshold for "loud speech body"
+                                # detection (different purpose than align_and_split's
+                                # SILENCE_THRESHOLD_DB=-68 which is for onset sensitivity).
 PREATTACK_TARGET_MS = 400
 TAIL_TARGET_MS = 730
 
@@ -84,6 +89,8 @@ DEFAULT_TAU_REJECT = 0.65
 HARD_REJECT_UNPROMPTED = 0.50
 HARD_REJECT_GAP = 0.50
 HARD_REJECT_SNR = 0.30
+HARD_REJECT_CONTINUITY = 0.3   # (2026-04-15) D8 bimodality reject — see compute_continuity_score
+CONTINUITY_GAP_MS = 730        # Gap threshold mirrors TAIL_SILENCE_MS in align_and_split
 
 # Formal endings (from detect_ending_truncation.py)
 FORMAL_ENDINGS = [
@@ -427,6 +434,49 @@ def compute_boundary_score(samples, sr):
     return 0.4 * silence_score + 0.6 * envelope_score
 
 
+def compute_continuity_score(samples, sr):
+    """D8: Bimodal distribution violation score [0, 1]. (2026-04-15)
+
+    Flags WAVs where a silence gap >= CONTINUITY_GAP_MS is followed by
+    speech resumption — breaking the expected unimodal energy envelope of a
+    single-sentence utterance (speech → silence → speech is the signature of
+    neighbor-sentence leak, e.g. L0313).
+
+    Uses SPEECH_DETECT_DB (-40 dB, loud body threshold) so room ambient does
+    not count as speech. Threshold is tied to TAIL_SILENCE_MS design so a
+    gap ≥ envelope-tail length is treated as "sentence over"; any speech
+    after that is by definition extra content.
+    """
+    win = int(sr * 0.010)        # 10 ms windows (matches RMS_WINDOW_MS pattern)
+    nw = len(samples) // win
+    if nw < 10:
+        return 1.0
+    trimmed = samples[:nw * win].reshape(nw, win)
+    rms = np.sqrt(np.mean(trimmed ** 2, axis=1) + 1e-12)
+    db = 20 * np.log10(np.maximum(rms, 1e-10))
+    is_speech = db >= SPEECH_DETECT_DB
+
+    threshold_windows = int(CONTINUITY_GAP_MS / 10)
+    worst_severity = 0.0
+    i = 0
+    while i < nw:
+        if not is_speech[i]:
+            j = i
+            while j < nw and not is_speech[j]:
+                j += 1
+            gap_len = j - i
+            has_speech_after = (j < nw and bool(np.any(is_speech[j:])))
+            if gap_len >= threshold_windows and has_speech_after:
+                excess_ms = (gap_len - threshold_windows) * 10
+                severity = min(1.0, 0.5 + excess_ms / 500.0)
+                if severity > worst_severity:
+                    worst_severity = severity
+            i = j
+        else:
+            i += 1
+    return max(0.0, 1.0 - worst_severity)
+
+
 # ============================================================
 # COMPOSITE SCORING
 # ============================================================
@@ -449,8 +499,11 @@ def compose_decision(scores, tau_accept=DEFAULT_TAU_ACCEPT, tau_reject=DEFAULT_T
         return 'REJECT', 0.0, flags + ['hard_reject:S_gap']
     if scores.get('S_snr', 1.0) < HARD_REJECT_SNR:
         return 'REJECT', 0.0, flags + ['hard_reject:S_snr']
+    # (2026-04-15) D8 bimodality gate — catches neighbor-sentence leak
+    if scores.get('S_continuity', 1.0) < HARD_REJECT_CONTINUITY:
+        return 'REJECT', 0.0, flags + ['hard_reject:S_continuity']
 
-    # Composite: geometric mean of D1-D4, D6-D7 (D5 stability is optional gate)
+    # Composite: geometric mean of D1-D4, D6-D8 (D5 stability is optional gate)
     core_scores = [
         scores.get('S_unprompted', 0.5),
         scores.get('S_gap', 0.5),
@@ -458,6 +511,7 @@ def compose_decision(scores, tau_accept=DEFAULT_TAU_ACCEPT, tau_reject=DEFAULT_T
         scores.get('S_duration', 0.5),
         scores.get('S_confidence', 0.5),
         scores.get('S_boundary', 0.5),
+        scores.get('S_continuity', 0.5),
     ]
     S_comp = geometric_mean(core_scores)
 
@@ -670,14 +724,20 @@ def score_all_segments(metadata_entries, wav_dir=None, eval_results=None,
         scores['S_confidence'] = compute_confidence_score(
             avg_logprob, no_speech_prob, compression_ratio)
 
-        # --- D7: S_boundary ---
+        # --- D7: S_boundary + D8: S_continuity ---
+        # Narrow the except: only swallow I/O errors. Code bugs (NameError,
+        # ValueError in numeric ops) should surface, not silently fallback.
         try:
             samples, sr = sf.read(wav_path, dtype='float64')
             if samples.ndim > 1:
                 samples = samples[:, 0]
-            scores['S_boundary'] = compute_boundary_score(samples, sr)
-        except Exception:
+        except (IOError, OSError, RuntimeError) as e:
+            logger.warning(f"Could not read {wav_path} for D7/D8: {e}")
             scores['S_boundary'] = 0.0
+            scores['S_continuity'] = 0.5
+        else:
+            scores['S_boundary'] = compute_boundary_score(samples, sr)
+            scores['S_continuity'] = compute_continuity_score(samples, sr)
 
         all_scores[fname] = scores
 
@@ -727,7 +787,7 @@ def run_composition(all_scores, tau_accept=None, tau_reject=None):
 
     # Per-dimension statistics
     dim_stats = {}
-    for dim in ['S_unprompted', 'S_gap', 'S_snr', 'S_duration', 'S_confidence', 'S_boundary']:
+    for dim in ['S_unprompted', 'S_gap', 'S_snr', 'S_duration', 'S_confidence', 'S_boundary', 'S_continuity']:
         values = [s.get(dim, 0.5) for s in all_scores.values() if isinstance(s.get(dim), (int, float))]
         if values:
             dim_stats[dim] = {

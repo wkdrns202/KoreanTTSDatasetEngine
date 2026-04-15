@@ -791,3 +791,192 @@ def load_eval_results(checkpoint_path=None):
 
 이는 2026-04-14 오후의 pipeline_manager 하드코딩 envelope 누락 사고와 **같은 클래스** — "외관상 override 가능한 것처럼 보이지만 실제로는 고정된 값".
 
+
+---
+
+# [APPEND #6] 2026-04-16 — Tail Zero-Fill + SUSTAINED_SILENCE 정렬 + D8 Bimodality Filter
+
+## 1. 배경 — L0313 케이스
+
+Stage 1+2 수정(AUDIO_PAD=320, ONSET_SAFETY=320, PRESPEECH_PAD=100, POSTSPEECH_PAD=300) 적용 후에도 일부 라인에서 **voiced region 내부의 이웃 문장 leak**이 잔존. 대표 사례가 Script_1_0313:
+```
+voiced region 구조: [front speech] + [880ms 연속 silence] + [tail speech]
+최장 silent gap: 880ms
+voiced region 마지막 300ms peak: 0.815 (전 amplitude 수준 — 이웃 문장)
+```
+
+v3 배치 Stage 4.5에서 이 케이스가 **ACCEPT로 분류됨** (sim=1.0 prompted=unprompted=1.0, 모든 R 지표 100%). 7 차원 중 어느 축도 "bimodal distribution"을 잡지 못함.
+
+## 2. 진단 — 엔벨로프 불일치 + 검출 차원 누락
+
+### 두 개의 구조적 gap
+
+**Gap 1 — 설계 상수 간 불일치**:
+```
+TAIL_SILENCE_MS      = 730    (envelope tail 설계)
+SUSTAINED_SILENCE_MS = 1000   (voice offset 확정 기준)
+```
+두 상수의 의미가 다름에도 하나는 730, 하나는 1000. 내부 로직 정합성 차원에서 bug.
+
+**Gap 2 — Stage 4.5 차원 부재**:
+정상 한국어 문장은 **정규분포 유사 단일 peak** 에너지 엔벨로프. 양 끝이 감쇠하는 unimodal 구조.
+L0313은 "speech → 긴 silence → speech" 의 **bimodal 구조** — 현재 7차원(S_unprompted/S_prompted/S_gap/S_snr/S_duration/S_confidence/S_boundary) 중 **직접 측정하는 축이 없음**.
+
+## 3. 적용한 수정
+
+### 수정 1 — SUSTAINED_SILENCE_MS 1000 → 730
+
+`align_and_split.py`:
+```python
+SUSTAINED_SILENCE_MS = 730   # was 1000, aligned to TAIL_SILENCE_MS
+```
+
+`find_voice_onset_offset()` default 인자도 None + 런타임 resolve 패턴으로 전환 (원칙 14 준수).
+
+**⚠ 실측 결과: 현재 아키텍처에서는 measurable effect 없음**.
+
+이유: `find_voice_onset_offset`의 `SILENCE_THRESHOLD_DB = -68dB` 기준으로 voiced window 검출 → 녹음실 ambient(-55~-60dB)가 전부 voiced로 분류 → `voiced[-1] = chunk 끝`으로 고정 → sustained silence 검증이 chunk 너머에서 silence 찾기 시도, 당연히 없음 → return (chunk_start, chunk_end) 사실상 no-op.
+
+그래도 원칙적 정합성 확보 및 미래 threshold 재조정 시 올바른 동작 보장 위해 **변경 유지**.
+
+### 수정 2 — D8 S_continuity 신설 (핵심)
+
+`selective_composer.py`에 **bimodality 검출 차원** 추가:
+
+```python
+SPEECH_DETECT_DB = -40           # 기존 align_and_split과 동일 의미 (loud body 검출)
+HARD_REJECT_CONTINUITY = 0.3     # 즉시 REJECT 임계
+CONTINUITY_GAP_MS = 730          # gap 임계 = envelope tail 길이
+
+def compute_continuity_score(samples, sr):
+    """D8 — voiced region 내부에 (gap >= 730ms) + (gap 이후 speech 재등장) 패턴이
+    있으면 bimodality violation. severity는 gap 길이 초과분에 비례."""
+    win = int(sr*0.010); nw = len(samples)//win
+    rms = np.sqrt(np.mean(samples[:nw*win].reshape(nw,win)**2, axis=1) + 1e-12)
+    db = 20*np.log10(np.maximum(rms, 1e-10))
+    is_speech = db >= SPEECH_DETECT_DB
+    # ... scan for (long gap) + (speech after)
+    # severity = min(1.0, 0.5 + excess_ms / 500.0)
+    # return 1.0 - worst_severity
+```
+
+`compose_decision()`에 hard gate 추가:
+```python
+if scores.get('S_continuity', 1.0) < HARD_REJECT_CONTINUITY:
+    return 'REJECT', 0.0, flags + ['hard_reject:S_continuity']
+```
+
+composite geometric mean 에도 포함 → 7차원 → 8차원.
+
+### 수정 3 — Exception narrowing
+
+발견 과정에서 `score_all_segments()` 의 `except Exception:` 가 NameError를 silent로 삼킨 사고 — `SPEECH_DETECT_DB` 미정의 버그가 "모든 S_boundary=0, S_continuity=0.5" 로 나타남. 원칙 15/16과 유사한 "조용한 실패" 패턴:
+
+```python
+# BEFORE
+try:
+    samples, sr = sf.read(wav_path, ...)
+    scores['S_boundary'] = compute_boundary_score(samples, sr)
+    scores['S_continuity'] = compute_continuity_score(samples, sr)
+except Exception:
+    scores['S_boundary'] = 0.0; scores['S_continuity'] = 0.5
+
+# AFTER
+try:
+    samples, sr = sf.read(wav_path, ...)
+except (IOError, OSError, RuntimeError) as e:
+    logger.warning(...); scores['S_boundary'] = 0.0; scores['S_continuity'] = 0.5
+else:
+    scores['S_boundary'] = compute_boundary_score(samples, sr)
+    scores['S_continuity'] = compute_continuity_score(samples, sr)
+```
+
+## 4. 검증
+
+### Test 범위 (Script_1_0301-0318, 18 WAVs)
+
+S_continuity 단독 측정:
+```
+L0313: 0.000   → hard_reject:S_continuity
+L0301, 0302, 0303, 0305, 0315 (normal): 1.000
+```
+- 5 샘플 분석: longest gap L0313=880ms > 730ms threshold, 나머지 ≤ 660ms
+- L0305(gap 660ms)도 threshold 아래라서 통과 — false positive 없음
+
+Stage 4.5 재스코어링:
+```
+18개 중 ACCEPT 17 / REJECT 1 (L0313)
+```
+
+### Full v3 배치 (1473 WAVs)
+
+D8 적용 전:
+```
+ACCEPT 1245 (84.5%) / PENDING 204 (13.8%) / REJECT 24 (1.6%)
+```
+
+D8 적용 후:
+```
+ACCEPT 1291 (87.6%) / PENDING 44 (3.0%) / REJECT 138 (9.4%)
+↑ +46            ↓ -160             ↑ +114
+```
+
+Rejection 분석: 138 중 **132개가 `hard_reject:S_continuity`** (95.7%). D8이 rejection의 주동력.
+
+Per-script bimodality 비율:
+```
+Script_1: 43/675 (6.4%)
+Script_5: 52/471 (11.0%)
+Script_6: 43/327 (13.1%)  ← 반복 어휘 → alignment 오류 높은 배치
+```
+
+S6 가 가장 높은 rejection — repetitive vocabulary의 영향.
+
+## 5. 원칙 (추가)
+
+- **원칙 17 (신규)**: 엔벨로프/타이밍 설계 상수 간 **관계식을 명시적으로 문서화**한다. `SUSTAINED_SILENCE_MS = TAIL_SILENCE_MS` 같은 제약은 코드 주석 + note에 둘 다 기록 (원칙 8 연장).
+- **원칙 18 (신규)**: 단일 지표(similarity) 가 1.0 이어도 **구조적 기형**(bimodal distribution, 에너지 imbalance, 비정상 pause 등) 은 별개 축으로 검증해야 한다. Whisper는 prompted + unprompted 둘 다 GT text를 출력할 수 있는데, 이는 "audio 내용이 정확히 GT" 를 증명하지 않음 — GT 문맥을 알고 transcribe한 결과일 뿐.
+- **원칙 19 (신규)**: 새 dimension 추가 시 **정상 샘플에서의 std** 를 반드시 측정하여 discriminative 여부 확인. std=0 이면 dead dimension (예: S_snr 이 모든 녹음에서 1.0 = 변별 없음).
+
+## 6. 활성 파라미터 (2026-04-16 확정)
+
+```python
+# Stage 1 / Stage 2 align_and_split.py
+AUDIO_PAD_MS         = 320
+MIN_GAP_FOR_PAD_MS   = 30
+SILENCE_THRESHOLD_DB = -68
+SPEECH_DETECT_DB     = -40
+RMS_WINDOW_MS        = 10
+FADE_MS              = 3
+FADE_OUT_MS          = 5
+ONSET_SAFETY_MS      = 320
+OFFSET_SAFETY_MS     = 120
+SUSTAINED_SILENCE_MS = 730    # was 1000 (원칙 17)
+PRESPEECH_PAD_MS     = 100
+POSTSPEECH_PAD_MS    = 300
+PREATTACK_SILENCE_MS = 400
+TAIL_SILENCE_MS      = 730
+
+# Stage 4.5 selective_composer.py
+SILENCE_THRESHOLD_DB     = -40
+SPEECH_DETECT_DB         = -40   # NEW
+HARD_REJECT_UNPROMPTED   = 0.50
+HARD_REJECT_GAP          = 0.50
+HARD_REJECT_SNR          = 0.30
+HARD_REJECT_CONTINUITY   = 0.3   # NEW — D8
+CONTINUITY_GAP_MS        = 730   # NEW
+DEFAULT_TAU_ACCEPT       = 0.88
+DEFAULT_TAU_REJECT       = 0.65
+```
+
+## 7. 다음 단계 (미해결)
+
+사용자 질문: **"SUSTAINED_SILENCE_MS=730으로 Stage 1+2에서 접근했는데도 L0313 증상이 여전한 이유?"**
+
+답변 — `find_voice_onset_offset`가 SILENCE_THRESHOLD_DB=-68로 ambient까지 voiced로 분류하여 실효적으로 no-op인 구조. 근본 해결에는 아래 중 하나 필요:
+1. 별도 "loud body threshold" 로 voice onset/offset 재검출 (현재 Step 3.5/3.6이 이미 하는 것과 유사, 단 Stage 2 trim 시점으로 옮겨야 함)
+2. `find_voice_onset_offset` 에 bimodality 감지 추가 — 긴 gap 발견 시 첫 cluster 만 채택
+3. Stage 1 word-level boundary refinement 를 end 쪽도 엄격 적용 (2026-04-03 formal ending 보호와 충돌 주의)
+
+옵션 선택 및 설계는 별도 세션에서.
+

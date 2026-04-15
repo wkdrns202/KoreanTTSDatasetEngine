@@ -115,11 +115,13 @@ FADE_OUT_MS = 5              # Fade-out duration in ms (shorter to preserve spee
 PREATTACK_SILENCE_MS = 400    # Pre-attack silence (ms) — generous for TTS training
 TAIL_SILENCE_MS = 730        # Tail silence (ms) — generous for TTS training
 SILENCE_THRESHOLD_DB = -68   # RMS threshold for silence detection (2026-04-14: -65→-68 to catch softer Korean consonant attacks that Stage 2 onset detection was classifying as silence)
+SUSTAINED_SILENCE_MS = 730   # (2026-04-15) was 1000; aligned to TAIL_SILENCE_MS. A silence gap >= envelope-tail length counts as "sentence over" — prevents Stage 2 offset detection from pulling in neighbor-sentence speech when Stage 1 over-extended the chunk.
 RMS_WINDOW_MS = 10           # RMS sliding window size (ms)
 PEAK_NORMALIZE_DB = -1.0     # Peak normalization target (dB)
 ONSET_SAFETY_MS = 320        # Pull onset back (2026-04-14 rev2: 30→320) paired with AUDIO_PAD_MS=320 so Stage 2 pullback actually reaches into Stage 1's padded region instead of clamping to chunk start
 OFFSET_SAFETY_MS = 120       # Extend offset to preserve natural speech decay (120ms for Korean endings)
 PRESPEECH_PAD_MS = 100       # (2026-04-14 rev2) Post voice-detection: trim pre-speech ambient to this length and zero-fill. Combined with 400ms envelope = 500ms total pre-speech silence (TTS-standard prosodic prefix, zero ambient noise)
+POSTSPEECH_PAD_MS = 300      # (2026-04-15) Symmetric tail zero-fill: trim post-body ambient to this length and zero-fill. Combined with 730ms envelope tail = 1030ms total tail silence, suppressing room ambient that leaked through the -68dB SILENCE_THRESHOLD + OFFSET_SAFETY region.
 SPEECH_DETECT_DB = -40       # Stricter threshold than SILENCE_THRESHOLD_DB (-68) used ONLY to locate the *loud speech body* start (vowel) for the trim+zerofill step. -68 detects ambient, which defeats the purpose of zero-fill. -40 reliably identifies where speech becomes clearly audible.
 
 # Set up logging
@@ -363,7 +365,11 @@ def compute_rms_windowed(samples, sr=48000, window_ms=RMS_WINDOW_MS):
 
 def find_voice_onset_offset(samples, sr=48000, threshold_db=SILENCE_THRESHOLD_DB,
                             window_ms=RMS_WINDOW_MS,
-                            sustained_silence_ms=1000):
+                            sustained_silence_ms=None):
+    # Default resolved at call time so module-global overrides take effect
+    # (see 2026-04-15 default-arg-capture audit).
+    if sustained_silence_ms is None:
+        sustained_silence_ms = SUSTAINED_SILENCE_MS
     """Find voice onset and offset sample indices using RMS sliding window.
 
     Offset detection requires sustained silence: after the last voiced window,
@@ -589,19 +595,46 @@ def post_process_wavs(wav_dir, wav_filter=None):
             # should coincide on normal lines.
             speech_pos = body_pos
 
-            # --- Step 4: Fade (applied at the speech boundary, not at voiced[0]) ---
-            # voiced[0:speech_pos] is now pure silence; fade from 0 into the
-            # actual speech attack at voiced[speech_pos:]. Tail fade unchanged.
-            actual_fade_in = min(fade_in_samples,
-                                 max(0, len(voiced) - speech_pos) // 4)
-            actual_fade_out = min(fade_out_samples, len(voiced) // 4)
+            # --- Step 3.6: Post-speech tail trim + zero-fill ---
+            # Mirror of Step 3.5 at the tail. Use SPEECH_DETECT_DB (-40dB) to
+            # locate the *end* of the loud speech body (last RMS window above
+            # the strict threshold). Trim any content past body_end +
+            # POSTSPEECH_PAD_MS and zero-fill the remainder. Suppresses the
+            # room ambient that -68dB voice detection + OFFSET_SAFETY left in
+            # the tail of voiced region (see 2026-04-15 tail-noise incident).
+            body_end_pos = len(voiced)
+            nw2 = len(voiced) // win
+            if nw2 >= 5:
+                v64 = voiced.astype(np.float64, copy=False)
+                trim2 = v64[:nw2 * win].reshape(nw2, win)
+                rms2 = np.sqrt(np.mean(trim2 ** 2, axis=1) + 1e-12)
+                db2 = 20 * np.log10(np.maximum(rms2, 1e-10))
+                loud2 = np.where(db2 >= SPEECH_DETECT_DB)[0]
+                if len(loud2) > 0:
+                    body_end_pos = int(loud2[-1] + 1) * win
+            target_post = int(sr * POSTSPEECH_PAD_MS / 1000)
+            tail_keep_end = min(body_end_pos + target_post, len(voiced))
+            if tail_keep_end < len(voiced):
+                voiced = voiced[:tail_keep_end]
+            body_end_pos = min(body_end_pos, len(voiced))
+            if body_end_pos < len(voiced):
+                voiced[body_end_pos:] = 0.0
+
+            # --- Step 4: Fade (applied at both speech boundaries) ---
+            # Fade-in: at body-start (voiced[speech_pos:]) — zero→speech attack
+            # Fade-out: at body-end (voiced[:body_end_pos]) — speech decay→zero
+            # Neither fade is applied at voiced[0] or voiced[-1] because both
+            # edges are now guaranteed silence from Step 3.5 / Step 3.6.
+            body_len = max(0, body_end_pos - speech_pos)
+            actual_fade_in = min(fade_in_samples, body_len // 4)
+            actual_fade_out = min(fade_out_samples, body_len // 4)
 
             if actual_fade_in > 0 and speech_pos + actual_fade_in <= len(voiced):
                 fade_in_curve = make_raised_cosine_fade(actual_fade_in)
                 voiced[speech_pos:speech_pos + actual_fade_in] *= fade_in_curve
-            if actual_fade_out > 0:
+            if actual_fade_out > 0 and body_end_pos - actual_fade_out >= speech_pos:
                 fade_out_curve = make_raised_cosine_fade(actual_fade_out)[::-1]
-                voiced[-actual_fade_out:] *= fade_out_curve
+                voiced[body_end_pos - actual_fade_out:body_end_pos] *= fade_out_curve
 
             # --- Step 5: Peak normalize voiced region to -1dB ---
             peak = np.max(np.abs(voiced))
