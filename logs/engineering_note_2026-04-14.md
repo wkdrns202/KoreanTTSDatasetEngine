@@ -980,3 +980,199 @@ DEFAULT_TAU_REJECT       = 0.65
 
 옵션 선택 및 설계는 별도 세션에서.
 
+
+---
+
+# [APPEND #7] 2026-04-16 — Tail Preservation 재설계 + Bimodal 차단 + 파라미터 4축 정렬
+
+## 1. 배경
+
+Option B 구현 후 L0313 bimodal 케이스는 원천 차단되었으나, 사용자가 청취한 결과 **정상 라인의 tail fade-out이 여전히 급격하게 cut-off** 되는 느낌을 보고. 기존 설계(5ms fade at body_end + 300ms zero-fill)는 실제 녹음의 자연 decay를 보존하지 못하고 본문 끝에서 바로 무음으로 전환하여 부자연스러운 끝마침을 생성.
+
+## 2. 디자인 재정립 — 정규분포 엔벨로프 관점
+
+사용자 직관: **오디오 엔벨로프는 정규분포 유사 단일 peak 형태, 양측 꼬리는 자연스럽게 감쇠**. 인공적 무음 절단보다 **natural decay + ambient preserve + 부드러운 fade**가 귀에 맞음.
+
+정렬 원칙: 
+```
+SUSTAINED_SILENCE_MS (voice offset 확정 기준)
+= TAIL_SILENCE_MS     (envelope tail zero 길이)
+= POSTSPEECH_PAD_MS + FADE_OUT_MS (natural preserve + fade)
+= 730ms
+```
+
+세 영역이 모두 같은 730ms 타임스케일에서 작동 → 내부 설계 일관성 확보.
+
+## 3. 변경 사항 (세부 트레이스)
+
+### Change 1 — POSTSPEECH_PAD_MS 300 → 700 (의미 전환)
+
+**이전 (APPEND #3)**: body_end 이후 300ms를 **zero-fill** (ambient 완전 제거)
+**이후**: body_end 이후 **700ms 자연 audio 보존** (zero-fill 삭제)
+
+Step 3.6의 `voiced[body_end_pos:] = 0.0` 한 줄 제거. voiced region 끝단에 녹음 상의 decay + ambient가 그대로 통과.
+
+### Change 2 — FADE_OUT_MS 5 → 30 + fade 위치 이동
+
+**이전**: `voiced[body_end - 5ms : body_end] *= fade_curve` (body_end 직전 5ms fade)
+**이후**: `voiced[-30ms:] *= fade_curve` (voiced region 맨 끝 30ms fade)
+
+30ms raised-cosine이 자연 decay → 완전 무음 전환을 부드럽게 보간. Fade-in은 기존대로 speech_pos 지점 유지 (asymmetric: 3ms in / 30ms out).
+
+### Change 3 — Option B: Stage 1+2 단계 bimodal 검출
+
+**문제**: `find_voice_onset_offset`의 SILENCE_THRESHOLD_DB=-68dB가 ambient(-55~-60dB)까지 voiced로 판정 → voiced[-1]이 chunk 끝에 고정 → sustained silence 검증 사실상 no-op. L0313 같은 "speech + 긴 silence + 이웃 speech" 패턴이 그대로 통과.
+
+**해법**: `find_voice_onset_offset` 내부에 **SPEECH_DETECT_DB(-40dB) 기반 body cluster 분석** 추가:
+```python
+body_windows = np.where(rms_db >= SPEECH_DETECT_DB)[0]
+diffs = np.diff(body_windows)
+split_points = np.where(diffs >= silence_windows_needed)[0]  # 730ms 기준
+if len(split_points) > 0:
+    # Bimodal 확인 → 첫 cluster 끝에서 offset 확정
+    bimodal_offset = int(body_windows[split_points[0]])
+```
+
+**결과** (L0313):
+- Voiced duration: 6680ms → 5560ms (-1120ms, 이웃 문장 제외)
+- 최장 silent gap: 1040ms → 100ms
+- Last 300ms peak: 0.815 (loud 이웃 content) → 0.338 (자연 decay)
+
+이중 방어 구조 완성:
+```
+Stage 1+2 bimodal 검출 (prevention)
+  → Stage 4.5 D8 S_continuity (residual filter)
+```
+
+### Change 4 — TAIL_EXTEND_MAX_MS 400 → 730
+
+**문제**: Change 1-2로 POSTSPEECH_PAD=700 설정했으나, Phase A 측정에서 대부분 라인이 +400ms에서 clamp. Stage 1의 `right_pad = min(TAIL_EXTEND_MAX_MS, right_gap - 20)` 로직이 Whisper segment end 뒤 최대 400ms만 chunk에 포함 → Stage 2가 확보할 수 있는 post-body content 상한 = 400ms.
+
+**해법**: TAIL_EXTEND_MAX_MS = 400 → **730** 상향. 네 개 상수가 모두 730ms로 일치.
+
+**리스크 완화**:
+- `right_pad = min(TAIL_EXTEND_MAX_MS, right_gap - 20)` — 인접 segment와의 gap 기준으로 자동 clamp (bleed 방지 유지)
+- Option B의 bimodality detector가 이웃 문장 추출됐을 때 Stage 2에서 자동 trim
+
+## 4. 검증 타임라인
+
+### Unit test Phase A (L0301-0318, 150s 트림 오디오)
+
+| 지표 | Option B (before tail fix) | Tail-preserve (after) |
+|------|---------------------------|----------------------|
+| Mean voiced duration delta vs prev | 0 | **+331ms** |
+| Last 30ms peak | N/A | 0.004 mean (fade 작동) |
+| Last 300ms peak | 0 (zero-fill) | 0.028 mean (자연 decay) |
+| Fade profile (last 30ms, 5ms bins) | [0, 0, ...] | **monotonic 감쇠 → 0.000** |
+| L0313 voiced duration | 5560ms | 5560ms (변화 없음, bimodal cap 유지) |
+| L0313 longest gap | 100ms | 100ms |
+
+청취 확인: 사용자 피드백 "끝 잘림 문제가 깨끗히 해결됐어"
+
+### 사용자 발견: +400ms clamp 이상 (ref → Change 4)
+
+측정에서 duration delta가 정확히 +400ms로 대부분 고정됨 발견. Stage 1 TAIL_EXTEND_MAX_MS의 제약임을 규명. 사용자 질문 "Whisper가 400ms단위로 분석을 하는건가?" → 아님, 단순 파이프라인 우리 쪽 magic number임을 확인 후 730으로 상향.
+
+## 5. CUDA OOM 발견 (환경 이슈)
+
+### 증상
+
+전체 배치 실행 시 align_and_split 시작 즉시 OOM:
+```
+CUDA out of memory. Tried to allocate 20.00 MiB.
+GPU 0 has a total capacity of 8.00 GiB of which 3.08 GiB is free.
+Of the allocated memory 3.86 GiB is allocated by PyTorch
+```
+
+### 진단
+
+- GPU 총: 8GB
+- 시스템 UI 앱 (Chrome, Cursor, Visual Studio, Parsec, OneDrive, Claude, WhatsApp, Explorer, devenv x2 등) GPU 가속 점유: **~1GB**
+- Whisper medium 로드 peak: **3.89GB**
+- Transcribe workspace: 추가 1-2GB
+- 합계: 6-7GB 필요 vs 실제 가용 ~7GB → 마진 거의 없음. 할당 과정에서 fragmentation으로 20MB 블록 못 찾아 OOM.
+
+### 과거 성공 조건
+
+이전 세션의 Stage 1+2 run들은 동일 하드웨어에서 성공 — 해당 시점에 UI 앱이 적었던 것으로 추정. 동일 VRAM 8GB지만 활성 앱 수에 따라 마진 가변.
+
+### 해결 (환경)
+
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` 시도했으나 효과 없음 (이미 3.89GB 실제 allocated 상태, fragmentation만의 문제가 아님).
+
+**사용자 조치**: Chrome, Cursor, Visual Studio 종료 → GPU 여유 확보.
+
+### 재발 방지 원칙 (추가)
+
+- **원칙 20 (신규)**: 8GB VRAM 환경에서 Whisper medium + 다수 UI 앱은 배타적. 풀 배치 실행 전 GPU-intensive 앱 종료 체크리스트 필요.
+- **원칙 21 (신규)**: CUDA OOM은 fragmentation만의 문제가 아니다. `expandable_segments` 환경 변수는 마진이 충분할 때 fragmentation 해결용이지, 절대 메모리 부족은 해결 못 함.
+- **원칙 22 (신규)**: 이전 run이 성공했다고 현재 run이 성공한다는 보장 없음 — 시스템 상태(다른 앱의 GPU 사용량)가 변수. 풀 배치 시점의 GPU 여유 명시적 확인 필요.
+
+## 6. 최종 파라미터 스냅샷 (2026-04-16 확정)
+
+```python
+# Stage 1 extraction
+AUDIO_PAD_MS         = 320     # front chunk pad
+TAIL_EXTEND_MAX_MS   = 730     # rear chunk pad (was 400, 2026-04-16)
+MIN_GAP_FOR_PAD_MS   = 30      # bleed 방지 gap threshold
+MAX_MERGE            = 5
+SEG_SEARCH_WINDOW    = 25
+SKIP_PENALTY         = 0.01
+MATCH_THRESHOLD      = 0.50
+CONSEC_FAIL_LIMIT    = 10
+
+# Stage 2 DSP
+SILENCE_THRESHOLD_DB = -68     # voice onset (sensitive for soft consonants)
+SPEECH_DETECT_DB     = -40     # loud body detection (bimodality + tail trim)
+RMS_WINDOW_MS        = 10
+PEAK_NORMALIZE_DB    = -1.0
+
+# Stage 2 timing (all at 730ms for design consistency)
+ONSET_SAFETY_MS      = 320
+OFFSET_SAFETY_MS     = 120
+SUSTAINED_SILENCE_MS = 730     # bimodality gap threshold (find_voice_onset_offset)
+PRESPEECH_PAD_MS     = 100     # front zero-fill (preserve silence)
+POSTSPEECH_PAD_MS    = 700     # rear natural preserve (no zero-fill, 2026-04-16)
+FADE_MS              = 3       # fade-in at speech boundary
+FADE_OUT_MS          = 30      # fade-out at voiced[-30ms:] (2026-04-16)
+
+# Stage 2 envelope
+PREATTACK_SILENCE_MS = 400
+TAIL_SILENCE_MS      = 730
+
+# Stage 4.5
+HARD_REJECT_UNPROMPTED = 0.50
+HARD_REJECT_GAP        = 0.50
+HARD_REJECT_SNR        = 0.30
+HARD_REJECT_CONTINUITY = 0.3
+CONTINUITY_GAP_MS      = 730
+```
+
+## 7. 최종 WAV 구조 (2026-04-16)
+
+```
+[400ms envelope pre-silence (zeros)]
+  + [100ms front zero-fill (PRESPEECH_PAD)]
+  + [~220ms captured consonant attack region (320 pad - 100 zero)]
+  + [3ms fade-in]
+  + [speech body]
+  + [~670ms natural decay + ambient (POSTSPEECH_PAD - FADE_OUT)]
+  + [30ms fade-out raised-cosine]
+  + [730ms envelope tail-silence (zeros)]
+```
+
+Total tail 구간 (speech body 끝부터 WAV 끝까지): 700 + 730 = **1430ms**, 그 중 30ms만 fade 처리, 나머지는 자연 decay + 무음.
+
+## 8. Four-way Parameter Alignment
+
+세 개의 독립 로직이 모두 730ms 타임스케일에서 작동:
+
+| 로직 | 역할 | 상수 |
+|------|------|------|
+| Stage 1 extraction | Whisper_end 뒤 chunk 확장 | TAIL_EXTEND_MAX_MS=730 |
+| Stage 2 bimodality | cluster 간 gap 판정 | SUSTAINED_SILENCE_MS=730 |
+| Stage 2 preserve + fade | natural tail + smooth fade | POSTSPEECH_PAD_MS+FADE_OUT_MS=700+30=730 |
+| Stage 2 envelope tail | 최종 zero silence | TAIL_SILENCE_MS=730 |
+
+**설계 원칙**: 시간 기준이 하나(730ms)로 통일되어 각 로직의 경계가 서로 충돌하지 않음. 이전 1000/400/300 혼용 상태 대비 내부 정합성 대폭 향상.
+
