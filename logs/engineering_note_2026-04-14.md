@@ -1176,3 +1176,100 @@ Total tail 구간 (speech body 끝부터 WAV 끝까지): 700 + 730 = **1430ms**,
 
 **설계 원칙**: 시간 기준이 하나(730ms)로 통일되어 각 로직의 경계가 서로 충돌하지 않음. 이전 1000/400/300 혼용 상태 대비 내부 정합성 대폭 향상.
 
+
+---
+
+# [APPEND #8] 2026-04-16 — 벤치마크 + AST 미계산 진단
+
+## 1. 총 보유 오디오 데이터셋
+
+| 데이터셋 | WAVs | 길이 | 커버 스크립트 |
+|---------|------|------|-------------|
+| Canonical (2026-02) | 4,206 | 8.43 h | S1(1-300), S2, S3, S4, S5(1-800) |
+| v4 ACCEPT (2026-04-16) | 1,410 | 2.84 h | S1(301-984), S5(542-1019), S6(1-330) |
+| 중복 (Script_5 542-800) | -243 | -0.44 h | v4 우선 적용 |
+| **합계 (unique)** | **5,373** | **10.83 h** | S1-S6 전체 |
+
+## 2. 파이프라인 벤치마크 — v4 배치 기준
+
+### 처리 성능
+
+| 지표 | 값 | 산식 |
+|------|-----|------|
+| **RT Rate** | **2.28x** | Raw Audio (201min) / Pipeline Compute (88min) |
+| 정렬률 | 99.3% | Matched (1481) / Target (1492) |
+| **Alignment Accuracy** | **94.5%** | ACCEPT (1410) / Target (1492) |
+| Tier 1 R1 | 96.15% | Tier 1 PASS (1424) / Matched (1481) |
+
+### 단계별 소요시간 (v4 실측)
+
+| 단계 | 시간 | 비중 |
+|------|------|------|
+| Stage 1+2 (정렬+분할+envelope) | 32m 54s | 37% |
+| Stage 3+4 (Tier 1 eval) | ~55m | 63% |
+| Stage 4.5 (composer) | 18s | <1% |
+| **총 파이프라인** | **~88분** | 100% |
+
+### 환경
+
+- GPU: NVIDIA RTX 3060 Ti (8GB VRAM)
+- CPU: [user machine]
+- 입력: 48kHz/24-bit/Mono WAV × 8 files, 총 200.97 min (3.35 h)
+- Whisper: medium (Tier 1), large 미실행 (Tier 2 CUDA OOM)
+
+## 3. 선행 연구 대비 신규성
+
+### 기존 존재 (개별 컴포넌트)
+
+| 기술 | 출처 |
+|------|------|
+| Whisper forced alignment | WhisperX (Bain et al., 2023) |
+| Forced aligner for TTS | Montreal Forced Aligner (MFA, Kaldi-based) |
+| VAD dual threshold | pyannote-audio, SpeechBrain |
+| ASR confidence (logprob) | Whisper discussions, OpenAI docs |
+| Quality scoring 2차원 | TTSDS2 (2025) |
+
+### 미보고 (이 파이프라인의 신규 기여)
+
+| 요소 | 설명 |
+|------|------|
+| **Bimodality detection** (D8 S_continuity) | silence cluster 분석으로 이웃 문장 leak 탐지 → Stage 1+2 예방 + Stage 4.5 필터 이중 방어 |
+| **8차원 통합 quality gate** | D1-D8 + bootstrap calibration — 기존 1-2차원 대비 근본적 확장 |
+| **S_stability (D5)** | Whisper multi-temperature sampling으로 전사 안정성 정량화 — 미보고 |
+| **Dual-threshold voice detection** | -68dB onset sensitivity + -40dB body detection 분리 운용 |
+| **Asymmetric DSP recipe** | 3ms fade-in / 30ms fade-out + 100ms front zero-fill + 700ms tail natural preserve |
+| **한국어 formal ending 보호** | -습니다 등 형식 어미 boundary 650ms 확장 + micro-pause tolerance |
+| **Forward-only search + skip-penalty** | 한국어 조사/어미 false-match cascading 방지에 특화 |
+
+### 종합 평가
+
+개별 컴포넌트(Whisper alignment, VAD, quality scoring)는 선행 연구에 존재하나, **이들을 8차원 통합 gate로 구성하고 한국어 형태론 특화 최적화를 적용한 end-to-end 자동화 파이프라인**은 학계·산업계에 보고되지 않음. 특히 **bimodality detection + multi-temperature stability scoring** 조합과 **dual-threshold voice detection의 분리 운용**은 완전 신규.
+
+## 4. D4 S_duration (AST) 미계산 현황
+
+### 증상
+
+v4 배치 1,481개 중 **1,224개 (83%)가 `ast_not_computed`** → S_duration=0.5 fallback.
+
+### 원인
+
+`selective_composer.py:866-867`:
+```python
+raw_audio_dir = os.path.join(BASE_DIR, "rawdata", "audio")
+sessions = discover_sessions(raw_audio_dir)
+```
+
+`discover_sessions`는 `rawdata/audio/` 직하 파일만 scan. v4 배치의 원본 오디오는 `rawdata/audio/2026-04-10_additional_lines/` **하위 디렉토리**에 위치 → session discovery 미포함 → session_id = 'unknown'.
+
+### 영향
+
+- S_duration이 전수 0.5 → composite score에서 duration anomaly 검출 불능
+- 현재 ACCEPT/REJECT 판정은 나머지 7차원이 보상 (S_unprompted, S_gap 등이 주도)
+- 그러나 **duration outlier**(비정상적으로 긴/짧은 segment)가 ACCEPT로 통과할 위험 잔존
+
+### 해결 방향
+
+파이프라인 자동화(`--full` 구현) 시 함께 해결:
+1. `discover_sessions`에 recursive directory scan 추가
+2. 또는 `--raw-audio-dir` override를 composer에 전달 (pipeline_manager가 관리)
+
