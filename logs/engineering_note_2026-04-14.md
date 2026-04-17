@@ -1273,3 +1273,308 @@ sessions = discover_sessions(raw_audio_dir)
 1. `discover_sessions`에 recursive directory scan 추가
 2. 또는 `--raw-audio-dir` override를 composer에 전달 (pipeline_manager가 관리)
 
+---
+
+# [IDEA #1] 2026-04-16 — G2P Phonetic Normalization으로 전사 신뢰도 향상
+
+**상태**: 아이디어 — 미구현, 추후 검증 필요
+
+## 1. 문제
+
+현재 Stage 4.5의 S_unprompted(D1) / S_prompted(D2)는 **표기형(grapheme) 기준** 유사도 비교.
+한국어 음운 변동(연음, 경음화, 비음화, ㅎ축약 등)으로 인해 Whisper가 **발음형으로 전사**하면 GT와의 similarity가 하락.
+
+```
+GT:      "먹었습니다"
+Whisper: "머겄습니다"   ← 연음 반영 전사
+raw sim: ~0.7x          ← 실제로는 정확한 음성인데 감점
+```
+
+이 문제는 **자유 연기(감정 발화, 극적 pause 등)** 톤에서 특히 심화됨.
+Whisper가 감정적 발화를 표준 표기보다 실제 발음에 가깝게 전사하는 경향.
+
+## 2. 제안
+
+GT와 Whisper 전사 결과 **양쪽 모두를 G2P(Grapheme-to-Phoneme) 변환** 후 비교.
+
+```
+GT → G2P:      "머거씀니다"
+Whisper → G2P: "머거씀니다"
+phonetic sim:  1.0  ← 정확한 매칭 복구
+```
+
+한국어 음운 규칙은 규칙성이 높아(예외 거의 없는 필수 규칙) 기계적 변환 정확도가 실용 수준.
+
+### 활용 가능한 규칙:
+- **연음**: 받침 + 모음 → 초성 이동 (먹어 → 머거)
+- **경음화**: 받침 ㄱㄷㅂ + ㄱㄷㅂㅅㅈ → 된소리 (학교 → 학꾜)
+- **비음화**: 받침 ㄱㄷㅂ + ㄴㅁ → ㅇㄴㅁ (국물 → 궁물)
+- **ㅎ 축약**: ㅎ + ㄱㄷㅈ → ㅋㅌㅊ (좋다 → 조타)
+
+### 후보 라이브러리:
+- `g2pk` (Korean G2P) — 검증 필요
+- 또는 자체 규칙 기반 변환기 (규칙이 한정적이므로 가능)
+
+## 3. 적용 방안
+
+**Option A — max 병행**: `max(raw_sim, phonetic_sim)` 채택 → 연음 오탐만 복구, 기존 동작 보존
+
+**Option B — 별도 차원**: D9 `S_phonetic` 신설 → composite score에 포함
+
+**Option C — fallback**: raw_sim < threshold 일 때만 phonetic_sim 계산 (연산량 절감)
+
+## 4. 기대 효과
+
+- 연음/음운 변동에 의한 false rejection 감소
+- 자유 연기 톤 데이터셋으로 확장 시 bimodality 오탐 완화 (strict envelope 가정 완화의 전제 조건)
+- Whisper backward 분석의 한국어 연음 불일치 문제 우회
+
+## 5. 리스크 및 검증 과제
+
+- G2P 라이브러리 자체의 변환 정확도 → 소규모 검증 선행 필요
+- 고유명사/외래어 처리 품질
+- 연산 비용 (per-utterance G2P는 가벼울 것으로 예상, 단 확인 필요)
+- 기존 파이프라인 안정성에 영향 없도록 Option A(max 병행)가 안전
+
+## 6. 선행 조건
+
+- [ ] `g2pk` 또는 대안 라이브러리 설치 및 기본 동작 확인
+- [ ] 현재 v4 배치의 reject 케이스 중 음운 변동이 원인인 비율 측정
+- [ ] 소규모 A/B 테스트 (raw_sim vs phonetic_sim, 50개 샘플)
+
+
+---
+
+# [APPEND #9] 2026-04-17 — D9 S_decay: Tail Truncation 자동 검출
+
+## 1. 동기 — "귀로만 잡을 수 있는 결함"이라는 공백
+
+APPEND #3~#7에서 tail cut-off 문제를 Stage 1+2 파라미터 통일(730ms 4축 정렬)로 **예방**했으나, 예방이 실패했을 때 이를 **감지**할 수단이 없었다. 현재 9개 차원(D1-D8 + D5 optional) 중 어느 것도 "발화 끝단이 자연스럽게 감쇠하는가"를 측정하지 않음:
+
+- D1 S_unprompted / D2 S_gap: 텍스트 내용 기반 → 내용이 온전하면 1.0
+- D4 S_duration (AST): 수십ms 잘림은 z-score 범위 안
+- D7 S_boundary: envelope 무음 구간 존재 여부만 확인
+- D8 S_continuity: bimodal(이웃 문장 leak) 전용
+
+사용자 판단: "Stage 1+2에서 prevention은 됐지만, detection 필터가 아예 없으면 미래에 파라미터가 변경되거나 외부 데이터가 들어올 때 tail truncation이 무방비로 통과할 수 있다."
+
+## 2. 가설 — 에너지 1차 미분으로 cliff vs natural decay 구분
+
+정상적인 한국어 발화의 에너지 엔벨로프는 정규분포 유사 단일 peak 형태. 발화 끝단은 **자연 감쇠(exponential-like decay)**를 보이며, 에너지가 수십~수백ms에 걸쳐 점진적으로 하강함.
+
+반면 인공적 truncation(zero-fill, 급격한 fade, 또는 Stage 1 extraction 부족)은 에너지가 정상 수준에서 무음으로 **급락**. 이 차이는 에너지 엔벨로프의 **1차 미분(기울기, dB/ms)**으로 정량화 가능:
+
+```
+자연 감쇠:   ... -35 -38 -42 -47 -53 -60 -68  (완만한 roll-off)
+             기울기: -0.6  -0.8  -1.0  -1.2  -1.4  -1.6 dB/ms
+
+인공 cliff:  ... -35 -36 -120 -120 -120 -120    (급락)
+             기울기: -0.2  -16.8  0.0  0.0  0.0 dB/ms  ← spike
+```
+
+**가설**: tail 구간 내 최대 |기울기|가 임계값(4 dB/ms)을 초과하면 비자연적 truncation.
+
+## 3. 구현 여정 — 3차에 걸친 설계 수정
+
+### 3-1. 1차 구현: body_end 기준 + 고정 50ms 분석 (실패)
+
+```
+body_end(-40dB) 에서 뒤로 50ms를 분석.
+DECAY_NATURAL_THRESHOLD = 1.0 dB/ms, DECAY_CLIFF_THRESHOLD = 4.0 dB/ms
+```
+
+**결과**: canonical 30개 전부 S_decay > 0.8 (대부분 1.0). 변별력 있어 보였으나 **관측 구간이 잘못됨**.
+
+**문제 진단**: -40dB 경계는 아직 speech body 안이다. body_end에서 50ms 뒤를 봐봤자 여전히 시끄러운 영역이라 기울기가 완만하게 나옴. 실제 잘림은 -40dB **아래**의 decay 영역에서 발생하는데, 그 구간을 전혀 보고 있지 않았음.
+
+### 3-2. 2차 구현: body_end → last_signal 실구간 분석 (부분 성공)
+
+사용자 지적: "speechbody는 -40dB true/false 기준이라 너무 높다(아직 시끄럽다). 마지막 signal 위치에서 -200ms까지를 보는 게 맞다."
+
+```
+body_end(-40dB) → last_signal(-68dB) 구간의 실제 길이와 gradient 분석.
+두 가지 피처: (a) gradient steepness, (b) decay span(ms).
+Score = min(gradient_score, span_score).
+```
+
+**결과**:
+- canonical: mean 0.20, cliff 82% → **구 zero-fill 데이터를 정확히 감지**
+- v4 tail-preserve: mean 0.97, natural 96% → **정상 데이터는 통과**
+
+변별력 확보. 그러나 **구조적 맹점** 발견:
+
+**문제**: body_end를 분석의 "시작점 앵커"로 쓰면, body_end 이전에 truncation이 발생한 경우를 감지 못함. 또한 body_end 자체가 없는 조용한 발화에서 return 1.0 (false negative).
+
+### 3-3. 3차 구현: last_signal 앵커 + 역방향 730ms 스캔 (최종)
+
+사용자 지적: "body_end 이전에 잘리는 사고가 발생했으면 어떻게 구별해? last_signal에서 역으로 730ms를 탐색하는 식의 정교한 접근이 좋겠다."
+
+```
+last_signal(-68dB) 앵커 → 역방향 730ms(=TAIL_SILENCE_MS) 스캔.
+body_end는 span 계산의 "참고값"으로만 사용 (없어도 동작).
+```
+
+**핵심 변경**:
+1. 앵커를 body_end → **last_signal**로 이동 (유일한 의존점)
+2. 탐색 방향을 forward → **backward** (last_signal에서 역산)
+3. 탐색 범위를 고정 50ms → **TAIL_SILENCE_MS(730ms)** 파라미터 연동
+4. body_end 없는 경우 tail window 길이를 span 대체값으로 사용
+
+## 4. 이산 미분 vs 연속 미분 — 왜 극한을 사용하지 않는가
+
+구현에서는 5ms RMS window의 **차분(finite difference)**을 사용한다:
+
+```python
+gradient = np.diff(tail_db) / DECAY_WINDOW_MS   # Δ(dB) / Δt = dB/ms
+```
+
+이것은 수학적으로 **이산 미분(discrete derivative)**이지 연속 미분이 아니다. 극한(Δt → 0)을 사용하지 않은 이유:
+
+**이유 1 — 디지털 오디오는 본질적으로 이산 시계열이다.**
+48kHz 샘플링의 해상도는 ~0.02ms. 이론적으로 1-sample 단위의 gradient를 계산할 수 있지만, 개별 샘플의 amplitude는 **정현파의 순간값**이지 에너지가 아니다. "볼륨"을 의미 있게 정의하려면 일정 구간에 걸쳐 RMS(에너지의 평균)를 계산해야 하며, 그 구간이 곧 window이다.
+
+**이유 2 — window를 줄이면 노이즈에 취약해진다.**
+에너지의 순간 변동(마찰음, 파열음의 release burst, 마이크 팝 등)이 극도로 짧은 window에서는 cliff처럼 보일 수 있다. 5ms window는 이런 순간 변동을 평활화하면서도 실제 truncation(10-20ms 단위의 구조적 급락)은 잡을 수 있는 해상도. 이것은 극한 접근이 아니라 **신호처리에서의 적정 해상도 선택** 문제다.
+
+**이유 3 — 연산량은 무관하다.**
+1481개 WAV × 730ms / 5ms = ~216,000 window. `np.diff`는 이 규모에서 < 1ms. window를 1ms(해상도 5배)로 줄여도 연산 시간 차이는 무시할 수 있다. 5ms를 선택한 것은 연산량이 아니라 **노이즈 내성과 검출 해상도의 tradeoff**이다.
+
+요약: Δt=5ms의 차분은 "근사적 미분"이 아니라, 이산 에너지 시계열에 대해 **정확히 올바른 연산**이다. 연속 미분의 극한은 이 도메인에서 물리적 의미가 없다.
+
+## 5. 최종 알고리즘 구조
+
+```python
+def compute_decay_score(samples, sr):
+    # Step 1: Strip R6 envelope (400ms lead + 730ms tail zeros 제거)
+    # Step 2: 5ms RMS window로 dB 엔벨로프 계산
+    # Step 3: last_signal(-68dB) 위치 확정 — 유일한 앵커
+    # Step 4: last_signal에서 역방향 730ms를 tail window로 정의
+    # Step 5: tail window 내 gradient(dB/ms) 계산, 최대 |기울기| 추출
+    #          <= 4 dB/ms → 1.0 (natural)
+    #          >= 10 dB/ms → 0.0 (cliff)
+    # Step 6: body_end(-40dB) → last_signal 거리를 span으로 계산
+    #          >= 50ms → 1.0 (충분한 decay 구간)
+    #          <= 10ms → 0.0 (decay 없음)
+    #          body_end 없으면 tail window 길이로 대체
+    # Step 7: score = min(gradient_score, span_score)
+```
+
+## 6. 검증 결과
+
+### 200개 샘플 비교 (최종 버전)
+
+| 배치 | mean | natural (>=0.8) | borderline | cliff (<0.3) |
+|------|------|----------------|-----------|-------------|
+| canonical (구 zero-fill) | 0.2033 | 36 (18%) | 2 (1%) | **162 (81%)** |
+| v4 tail-preserve | **0.9707** | **193 (97%)** | 2 (1%) | 5 (2.5%) |
+
+### v4 전수 (1481개)
+
+- cliff (<0.3): **32개 (2.2%)** — 청취 검증 대상
+- 대표 cliff 파일: Script_1_0354, Script_1_0389, Script_1_0402, Script_5_0621, Script_6_0146
+
+### 변별력 확인
+
+- std = 0.16 (v4), 0.38 (canonical) — dead dimension이 아님
+- canonical의 81% cliff 감지는 **정상** — 구 배치는 실제로 tail zero-fill 처리됨
+- v4의 97% natural은 **730ms 4축 정렬의 효과** 확인
+
+## 7. 파라미터 (최종)
+
+```python
+DECAY_SIGNAL_DB = -68        # align_and_split.SILENCE_THRESHOLD_DB와 동일
+DECAY_WINDOW_MS = 5          # RMS 해상도 (노이즈 내성과 검출력의 tradeoff)
+DECAY_SCAN_MS = 730          # 역방향 탐색 범위 (= TAIL_SILENCE_MS)
+DECAY_MIN_SPAN_MS = 10       # 이하 → score 0 (truncated)
+DECAY_GOOD_SPAN_MS = 50      # 이상 → score 1 (충분한 tail)
+DECAY_NATURAL_GRAD = 4.0     # dB/ms, 자연 감쇠 상한
+DECAY_CLIFF_GRAD = 10.0      # dB/ms, cliff 하한
+```
+
+## 8. 설계 원칙 (추가)
+
+- **원칙 23 (신규)**: Prevention(파라미터 수정)과 Detection(품질 게이트)은 **독립적으로 모두 존재해야 한다**. Prevention이 완벽하더라도 Detection이 없으면 회귀를 감지할 수 없고, Detection만으로는 산출 단계에서 이미 발생한 결함을 되돌릴 수 없다.
+- **원칙 24 (신규)**: 분석 구간의 앵커는 **"결함이 발생할 수 있는 위치"보다 하류(downstream)**에 잡아야 한다. body_end를 앵커로 쓰면 body_end 이전의 결함을 볼 수 없다. last_signal을 앵커로 쓰고 역방향 탐색하면 모든 위치의 결함을 커버할 수 있다.
+- **원칙 25 (신규)**: 이산 시계열의 미분은 **적정 해상도의 차분**이 정답이다. window를 줄여 극한에 접근하면 순간 변동(burst, pop)이 구조적 결함으로 오판된다. 해상도는 검출 대상의 시간 스케일(여기서는 10-50ms)에 맞춰야 한다.
+
+## 9. 통합 상태
+
+- `selective_composer.py`: 9차원 (D1-D9) + D5 optional
+- `compose_decision()`: geometric mean에 S_decay 포함
+- `calibrate_thresholds()`: bootstrap에 S_decay 포함
+- `score_all_segments()`: D7/D8과 함께 WAV 읽기 시 계산
+- `export_composition_csv()`: S_decay 컬럼 포함
+- hard reject gate: **미설정** — 청취 검증 후 임계값 결정 예정
+
+## 10. HEAD(앞단) 검출 — 구현 + 근본적 한계 발견
+
+### 10-1. 1차 시도: zero-fill 전이 포함 → 전수 false positive
+
+zero-fill(-120dB) → speech(-30dB) 전이를 포함해 gradient를 측정하면, 정상 파일도 12~18 dB/ms로 전수 cliff 판정. 인공 경계가 gradient를 지배하기 때문.
+
+### 10-2. 2차 시도: zero-fill skip → 극단적 cliff만 감지 가능
+
+first_signal(-68dB) **이후**의 speech 내부만 스캔하도록 수정. zero-fill 전이를 skip하면 정상 데이터의 max_rise가 1~4 dB/ms로 안정됨. HEAD에서는 span 조건을 비활성화 (한국어 파열음은 원래 span=0이 정상).
+
+v4 1,481개 결과: HEAD natural 95.3%, borderline 70건(4.7%), cliff 0건. borderline 파일(0.315~0.797)을 청취한 결과 **전부 문제 없음 확인**.
+
+### 10-3. 근본적 한계 발견 — 자음 절삭은 DSP로 감지 불가
+
+사용자가 귀로 앞단 잘림을 확인한 파일:
+
+```
+Script_2_0011.wav: head=1.000, max_rise=3.21 dB/ms → 알고리즘은 "완벽한 정상"
+Script_2_0068.wav: head=0.960, max_rise=4.24 dB/ms → 알고리즘은 "거의 정상"
+```
+
+두 파일 모두 gradient가 정상 범위(3~4 dB/ms)인데, **귀로 들으면 자음이 잘려 있다**.
+
+이것은 HEAD truncation의 본질적 비대칭성 때문이다:
+
+```
+모음으로 시작하는 정상 발음 "아버지":
+  [silence] → [-35dB] → [-14dB] → [-9dB]    gradient = 4.2 dB/ms
+
+자음이 잘린 발음 "(ㄱ절삭)아버지":
+  [silence] → [-35dB] → [-14dB] → [-9dB]    gradient = 4.2 dB/ms
+                                              ↑ 동일한 파형
+```
+
+**"자음이 있었어야 하는데 없다"는 정보는 파형에 존재하지 않는다.** 이것은 Ground Truth 텍스트와 대조해야만 알 수 있는 **언어학적 정보**이지, 에너지 프로필에서 읽을 수 있는 **물리적 정보**가 아니다.
+
+### 10-4. HEAD vs TAIL 비대칭 정리
+
+| | TAIL (offset) | HEAD (onset) |
+|--|--|--|
+| 정상 패턴 | 점진적 감쇠 (1~4 dB/ms) | **급격한 시작** (자연) |
+| 잘림 패턴 | 급격한 절단 (10+ dB/ms) | **급격한 시작** (잘림) |
+| gradient로 구분 | **가능** — 정상과 잘림의 gradient가 4배+ 차이 | **불가능** — 정상과 잘림의 gradient가 동일 |
+| 이유 | 발화 끝단은 물리적으로 자연 감쇠가 있음 | 발화 시작은 원래 급격 (consonant burst) |
+| 감지 가능한 결함 | zero-fill cliff, fade 부족, extraction 부족 | 극단적 cliff(10+ dB/ms)만 가능 |
+| 감지 불가능한 결함 | — | **자음 절삭** (gradient 정상 범위) |
+
+### 10-5. D9 HEAD의 위치: "극단적 cliff만 잡는 안전망"
+
+현재 구현(first_signal 앵커 + forward 스캔, gradient only)은:
+- ✅ zero-fill/extraction 부족으로 인한 **에너지 절벽** (10+ dB/ms)을 감지
+- ❌ 자음 절삭으로 인한 **미묘한 onset truncation**은 감지 불가
+
+후자를 잡으려면 D1(S_unprompted, Whisper 전사)이 유일한 수단이다. Whisper가 "가버지"를 "아버지"로 전사하면 similarity가 떨어지고 → S_unprompted가 페널티를 줌. 그러나 Whisper도 한국어 자음 onset의 미묘한 절삭을 항상 감지하지는 못하므로 (prompted 모드에서 GT를 "알고" 맞춤), **이 클래스의 결함은 현재 파이프라인의 미해결 한계**로 남는다.
+
+### 10-6. 기울기 임계값 정의 (최종)
+
+**완만한 전이 (natural, <= 4 dB/ms)**:
+- 30dB 에너지 차이가 50ms 이상에 걸쳐 분포
+- TAIL: 자연 감쇠 p95 = 3.57 dB/ms
+- HEAD: 정상 onset 후 speech 내부 p95 = 3.81 dB/ms
+- 양쪽 모두 동일 임계값 사용 가능
+
+**극단적 전이 (cliff, >= 10 dB/ms)**:
+- 50dB+ 에너지 차이가 5ms 만에 발생
+- TAIL: zero-fill cliff 실측 12~15 dB/ms
+- HEAD: zero-fill 전이(skip 대상) 12~18 dB/ms, speech 내부 극단 케이스 6~8 dB/ms
+
+**4~10 dB/ms 구간 (선형 보간)**:
+- 파열음 release burst, 마찰음 onset 등 자연 순간 변동 보호
+- HEAD에서는 이 구간에 걸리는 borderline(70건/1481)이 청취 확인 결과 전부 정상
+

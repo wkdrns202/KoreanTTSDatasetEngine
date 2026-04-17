@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-04-04T19:01:35.488884",
+  "timestamp": "2026-04-17T18:01:21.345659",
   "total_segments": 4176,
-  "accept_count": 3930,
-  "pending_count": 159,
-  "reject_count": 87,
-  "composition_rate": 94.11,
+  "accept_count": 3805,
+  "pending_count": 100,
+  "reject_count": 271,
+  "composition_rate": 91.12,
   "calibration": {
-    "tau_accept": 0.7677201625438445,
+    "tau_accept": 0.7599973269482616,
     "tau_accept_ci_95": [
-      0.7568437526123128,
-      0.7749286287195937
+      0.7545609663774518,
+      0.7691665175583251
     ],
     "tau_reject": 0.65,
     "n_known_good": 3988,
     "n_known_bad": 4,
     "n_bootstrap": 1000,
-    "timestamp": "2026-04-04T19:01:35.429369"
+    "timestamp": "2026-04-17T18:01:21.256660"
   },
   "dimension_statistics": {
     "S_unprompted": {
@@ -43,12 +43,12 @@
       "max": 1.0
     },
     "S_duration": {
-      "mean": 0.7759,
-      "std": 0.196,
-      "p5": 0.3844,
-      "p95": 0.9825,
+      "mean": 0.7698,
+      "std": 0.2007,
+      "p5": 0.3664,
+      "p95": 0.9849,
       "min": 0.0,
-      "max": 0.9999
+      "max": 0.9998
     },
     "S_confidence": {
       "mean": 0.5,
@@ -65,39 +65,47 @@
       "p95": 1.0,
       "min": 0.9984,
       "max": 1.0
+    },
+    "S_continuity": {
+      "mean": 0.9331,
+      "std": 0.2328,
+      "p5": 0.2,
+      "p95": 1.0,
+      "min": 0.0,
+      "max": 1.0
     }
   },
   "per_script_breakdown": {
     "1": {
-      "accept": 283,
-      "pending": 10,
-      "reject": 5,
+      "accept": 281,
+      "pending": 7,
+      "reject": 10,
       "total": 298
     },
     "2": {
-      "accept": 1171,
+      "accept": 1054,
       "pending": 38,
-      "reject": 25,
+      "reject": 142,
       "total": 1234
     },
     "3": {
-      "accept": 800,
-      "pending": 40,
-      "reject": 25,
+      "accept": 801,
+      "pending": 23,
+      "reject": 41,
       "total": 865
     },
     "4": {
-      "accept": 923,
-      "pending": 50,
-      "reject": 17,
+      "accept": 922,
+      "pending": 29,
+      "reject": 39,
       "total": 990
     },
     "5": {
-      "accept": 753,
-      "pending": 21,
-      "reject": 15,
+      "accept": 747,
+      "pending": 3,
+      "reject": 39,
       "total": 789
     }
   },
-  "human_review_count": 183
+  "human_review_count": 189
 }

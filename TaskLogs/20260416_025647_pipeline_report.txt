@@ -1,0 +1,41 @@
+================================================================================
+TTS DATASET PIPELINE REPORT
+================================================================================
+Date: 2026-04-16 02:56:47
+Tool: Whisper ASR (medium model, CUDA - NVIDIA GeForce RTX 3060 Ti)
+Config: window=25, threshold=0.5, penalty=0.01, pad=320ms, preattack=400ms, tail=730ms, offset_safety=120ms
+
+================================================================================
+ALIGNMENT RESULTS
+================================================================================
+  Script_1:
+    Script lines: 684
+    Matched:      0  (0.0%)
+    Skipped:      0
+    Audio files:  2
+
+  Script_5:
+    Script lines: 478
+    Matched:      0  (0.0%)
+    Skipped:      0
+    Audio files:  2
+
+  Script_6:
+    Script lines: 330
+    Matched:      0  (0.0%)
+    Skipped:      0
+    Audio files:  4
+
+  TOTAL: 0/1492 matched (0.0%)
+         0 lines skipped
+
+================================================================================
+DATASET VALIDATION
+================================================================================
+  Metadata entries:  0
+  WAV files:         0
+  Missing WAVs:      0
+  Orphan WAVs:       0
+  Integrity:         PASS
+
+================================================================================

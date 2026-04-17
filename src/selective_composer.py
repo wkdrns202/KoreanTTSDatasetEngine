@@ -13,6 +13,8 @@ Scoring Dimensions:
   D5. S_stability   — Transcription stability across decode temps (on-demand)
   D6. S_confidence  — Whisper self-reported confidence (avg_logprob)
   D7. S_boundary    — Continuous boundary/envelope quality score
+  D8. S_continuity  — Bimodal distribution violation (neighbor leak)
+  D9. S_decay       — Tail decay naturalness (cliff cut-off detection)
 
 Usage:
   python selective_composer.py                        # Score all segments
@@ -57,6 +59,7 @@ COMPOSITION_REPORT_PATH = os.path.join(LOG_DIR, "composition_report.json")
 PENDING_POOL_PATH = os.path.join(LOG_DIR, "pending_pool.json")
 REJECTION_LOG_PATH = os.path.join(LOG_DIR, "rejection_log.json")
 CALIBRATION_PATH = os.path.join(LOG_DIR, "calibration_report.json")
+COMPOSITION_CSV_PATH = os.path.join(LOG_DIR, "composition_results.csv")
 EVAL_CHECKPOINT_PATH = os.path.join(LOG_DIR, "eval_checkpoint.json")
 
 # AST (Average Spoken Time) parameters
@@ -238,15 +241,19 @@ def discover_sessions(raw_audio_dir):
     if not os.path.isdir(raw_audio_dir):
         logger.warning(f"Raw audio dir not found: {raw_audio_dir}")
         return sessions
-    for f in sorted(os.listdir(raw_audio_dir)):
-        m = re.match(r'Script_(\d+)_(\d+)-(\d+)\.wav', f)
-        if m:
-            sessions.append({
-                'script': int(m.group(1)),
-                'start': int(m.group(2)),
-                'end': int(m.group(3)),
-                'session_id': f.replace('.wav', '')
-            })
+    # (2026-04-16) os.walk for recursive scan — raw audio may live in
+    # subdirectories (e.g., rawdata/audio/2026-04-10_additional_lines/).
+    # Prior os.listdir missed those, causing 83% ast_not_computed.
+    for root, _dirs, files in os.walk(raw_audio_dir):
+        for f in sorted(files):
+            m = re.match(r'Script_(\d+)_(\d+)-(\d+)\.wav', f)
+            if m:
+                sessions.append({
+                    'script': int(m.group(1)),
+                    'start': int(m.group(2)),
+                    'end': int(m.group(3)),
+                    'session_id': f.replace('.wav', '')
+                })
     return sessions
 
 
@@ -295,14 +302,13 @@ def compute_ast_baseline(metadata_entries, wav_dir, sessions):
             if not os.path.exists(wav_path):
                 continue
             try:
-                info = sf.info(wav_path)
-                duration = info.duration
+                duration = _measure_speech_body_duration(wav_path)
                 if duration < 0.1:
                     continue
                 chars = count_characters(entry['ground_truth'])
                 if chars == 0:
                     continue
-                ast_values.append(duration / chars)  # seconds per character
+                ast_values.append(duration / chars)
             except Exception:
                 continue
 
@@ -316,6 +322,45 @@ def compute_ast_baseline(metadata_entries, wav_dir, sessions):
             logger.warning(f"Session {sess_id}: insufficient AST samples ({len(ast_values)})")
 
     return stats
+
+
+def _measure_speech_body_duration(wav_path):
+    """Measure the duration of the *speech body* only, excluding all
+    envelope silence and designed padding regions.
+
+    Reads the WAV, strips the fixed R6 envelope (PREATTACK + TAIL silence),
+    then finds the first and last RMS windows above SPEECH_DETECT_DB (-40dB)
+    within the voiced region. Returns the duration in seconds between those
+    two points — the actual speaking time, free of any pipeline-added silence.
+
+    This is critical for AST (Average Spoken Time) calculation: using total
+    WAV duration inflates AST by 30-50% for short lines because the fixed
+    ~1.9s envelope overhead is a larger fraction of shorter recordings.
+    See 2026-04-16 L0948 false-REJECT incident.
+    """
+    samples, sr = sf.read(wav_path, dtype='float64')
+    if samples.ndim > 1:
+        samples = samples[:, 0]
+    # Strip R6 envelope (fixed zeros at both ends)
+    lead = int(sr * PREATTACK_TARGET_MS / 1000)
+    tail = int(sr * TAIL_TARGET_MS / 1000)
+    if lead + tail >= len(samples):
+        return 0.0
+    voiced = samples[lead:len(samples) - tail]
+    # Find speech body via -40dB RMS windows
+    win = int(sr * 0.010)  # 10ms
+    nw = len(voiced) // win
+    if nw < 2:
+        return len(voiced) / sr
+    trimmed = voiced[:nw * win].reshape(nw, win)
+    rms = np.sqrt(np.mean(trimmed ** 2, axis=1) + 1e-12)
+    db = 20 * np.log10(np.maximum(rms, 1e-10))
+    speech_idx = np.where(db >= SPEECH_DETECT_DB)[0]
+    if len(speech_idx) == 0:
+        return len(voiced) / sr
+    body_start = speech_idx[0] * win
+    body_end = (speech_idx[-1] + 1) * win
+    return (body_end - body_start) / sr
 
 
 def compute_duration_score(wav_path, gt_text, ast_stats, session_id):
@@ -335,8 +380,7 @@ def compute_duration_score(wav_path, gt_text, ast_stats, session_id):
 
     flags = []
     try:
-        info = sf.info(wav_path)
-        duration = info.duration
+        duration = _measure_speech_body_duration(wav_path)
         if duration < 0.1:
             return 0.0, 0.0, 1.0, ['zero_duration']
 
@@ -344,7 +388,7 @@ def compute_duration_score(wav_path, gt_text, ast_stats, session_id):
         if chars == 0:
             return 0.5, 0.0, 1.0, ['no_chars']
 
-        segment_ast = duration / chars  # seconds per character
+        segment_ast = duration / chars
 
         if session_id not in ast_stats:
             return 0.5, 0.0, 1.0, ['no_baseline']
@@ -434,6 +478,52 @@ def compute_boundary_score(samples, sr):
     return 0.4 * silence_score + 0.6 * envelope_score
 
 
+def compute_stability_score(wav_path, model, temperatures=None):
+    """D5: Transcription stability across decode temperatures [0, 1].
+
+    Runs Whisper transcription at multiple temperatures and measures the
+    pairwise consistency of the outputs.  High consistency (all temps
+    produce the same text) → score ≈ 1.0.  Low consistency (different
+    temps produce different text) → score approaches 0.
+
+    Requires a loaded Whisper model (GPU).  Expensive: N_temps × transcribe.
+    Intended for PENDING-pool items only, not full-batch scoring.
+    """
+    if temperatures is None:
+        temperatures = [0.0, 0.2, 0.4, 0.6, 0.8]
+    import difflib
+    transcriptions = []
+    for temp in temperatures:
+        try:
+            result = model.transcribe(
+                wav_path, language="ko", verbose=False,
+                fp16=True, temperature=temp,
+                no_speech_threshold=0.6,
+                condition_on_previous_text=False,
+            )
+            transcriptions.append(result.get('text', '').strip())
+        except Exception:
+            transcriptions.append('')
+
+    if len(transcriptions) < 2:
+        return 0.5
+
+    # Pairwise similarity (SequenceMatcher) across all temp pairs
+    pairs = []
+    for i in range(len(transcriptions)):
+        for j in range(i + 1, len(transcriptions)):
+            a, b = transcriptions[i], transcriptions[j]
+            if not a and not b:
+                pairs.append(1.0)
+            elif not a or not b:
+                pairs.append(0.0)
+            else:
+                pairs.append(difflib.SequenceMatcher(None, a, b).ratio())
+
+    # Mean pairwise similarity = stability score
+    return sum(pairs) / len(pairs) if pairs else 0.5
+
+
 def compute_continuity_score(samples, sr):
     """D8: Bimodal distribution violation score [0, 1]. (2026-04-15)
 
@@ -477,6 +567,186 @@ def compute_continuity_score(samples, sr):
     return max(0.0, 1.0 - worst_severity)
 
 
+def _score_edge(db, anchor, body_ref, scan_windows, direction, window_ms,
+                natural_grad, cliff_grad, min_span_ms, good_span_ms):
+    """Score one edge (head or tail) of the energy envelope.
+
+    Shared logic for both onset and offset truncation detection.
+    Measures gradient steepness and transition span in one direction.
+
+    Args:
+        db:            RMS envelope in dB (array of window values).
+        anchor:        Window index of the signal boundary (-68dB).
+                       For tail: last_signal.  For head: first_signal.
+        body_ref:      Window index of the body boundary (-40dB).
+                       For tail: body_end (last -40dB window).
+                       For head: body_start (first -40dB window).
+                       None if no -40dB content exists.
+        scan_windows:  How many windows to scan from anchor.
+        direction:     'backward' (tail) or 'forward' (head).
+        window_ms:     Duration of one RMS window in ms.
+        natural_grad:  dB/ms threshold for natural transition (score 1.0).
+        cliff_grad:    dB/ms threshold for cliff (score 0.0).
+        min_span_ms:   Span below this → score 0.
+        good_span_ms:  Span above this → score 1.
+
+    Returns:
+        float: score in [0, 1].
+    """
+    nw = len(db)
+
+    # --- Extract analysis region ---
+    if direction == 'backward':
+        region_start = max(0, anchor - scan_windows)
+        region = db[region_start:anchor + 1]
+    else:  # forward
+        region_end = min(nw, anchor + scan_windows + 1)
+        region = db[anchor:region_end]
+
+    if len(region) < 3:
+        return 1.0
+
+    # --- Gradient score ---
+    gradient = np.diff(region) / window_ms  # dB/ms
+
+    if direction == 'backward':
+        # Tail: look for steepest NEGATIVE gradient (energy drop)
+        target_grads = gradient[gradient < 0]
+        steepness = abs(np.min(target_grads)) if len(target_grads) > 0 else 0.0
+    else:
+        # Head: look for steepest POSITIVE gradient (energy rise)
+        target_grads = gradient[gradient > 0]
+        steepness = np.max(target_grads) if len(target_grads) > 0 else 0.0
+
+    if steepness <= natural_grad:
+        grad_score = 1.0
+    elif steepness >= cliff_grad:
+        grad_score = 0.0
+    else:
+        grad_score = 1.0 - (steepness - natural_grad) / (cliff_grad - natural_grad)
+
+    # --- Span score ---
+    if body_ref is not None:
+        if direction == 'backward':
+            span_ms = max(0, anchor - body_ref) * window_ms
+        else:
+            span_ms = max(0, body_ref - anchor) * window_ms
+    else:
+        span_ms = len(region) * window_ms
+
+    if span_ms >= good_span_ms:
+        span_score = 1.0
+    elif span_ms <= min_span_ms:
+        span_score = 0.0
+    else:
+        span_score = (span_ms - min_span_ms) / (good_span_ms - min_span_ms)
+
+    return min(grad_score, span_score)
+
+
+def compute_decay_score(samples, sr):
+    """D9: Edge transition naturalness score [0, 1]. (2026-04-17)
+
+    Detects artificial truncation at BOTH edges of the utterance:
+      - TAIL: cliff cut-off (energy drops to silence abruptly)
+      - HEAD: onset truncation (energy jumps to speech level abruptly,
+              consonant attack missing)
+
+    ===== Design: signal-boundary anchors + directional scan =====
+
+    TAIL analysis:
+      1. Anchor on last_signal (-68dB) — last detectable signal.
+      2. Scan BACKWARD up to 730ms.
+      3. Look for steep negative gradient (energy cliff-drop).
+
+    HEAD analysis:
+      1. Anchor on first_signal (-68dB) — first detectable signal.
+         This skips the PRESPEECH_PAD zero-fill region (-120dB), whose
+         transition to speech is an artificial cliff by design.
+      2. Scan FORWARD up to 730ms into the speech content.
+      3. Look for steep positive gradient (energy cliff-rise).
+
+    ===== Shared gradient thresholds =====
+
+    Empirical basis (2026-04-17, 300-sample measurement):
+      HEAD after first_signal: normal max_rise p95=3.8, max=6.0 dB/ms
+      TAIL before last_signal: normal max_drop p95=3.6, max=4.4 dB/ms
+      Truncated (zero-fill):   gradient 12-15 dB/ms
+
+      <= 4 dB/ms  → 1.0 (natural transition)
+      >= 10 dB/ms → 0.0 (cliff = truncation signature)
+      4-10 dB/ms  → linear interpolation (protects hard consonants)
+
+    ===== Final score = min(head_score, tail_score) =====
+
+    Both edges must pass. If either edge is truncated, the whole file
+    is flagged — a file with perfect tail but clipped onset is still bad.
+
+    Returns score in [0, 1]. Higher = more natural edges.
+    """
+    # ----- Thresholds (shared for head and tail) -----
+    DECAY_SIGNAL_DB = -68           # align_and_split.SILENCE_THRESHOLD_DB
+    DECAY_WINDOW_MS = 5             # RMS window resolution
+    DECAY_SCAN_MS = 730             # Scan range (= TAIL_SILENCE_MS)
+    DECAY_MIN_SPAN_MS = 10          # Below → score 0
+    DECAY_GOOD_SPAN_MS = 50         # Above → score 1
+    DECAY_NATURAL_GRAD = 4.0        # dB/ms, natural upper bound
+    DECAY_CLIFF_GRAD = 10.0         # dB/ms, cliff lower bound
+
+    if samples.ndim > 1:
+        samples = samples[:, 0]
+
+    # Step 1: Strip R6 envelope (pipeline-added zeros at both ends).
+    lead = int(sr * PREATTACK_TARGET_MS / 1000)
+    tail = int(sr * TAIL_TARGET_MS / 1000)
+    if lead + tail >= len(samples):
+        return 1.0
+    voiced = samples[lead:len(samples) - tail]
+
+    # Step 2: RMS envelope in 5ms windows.
+    win = int(sr * DECAY_WINDOW_MS / 1000)
+    nw = len(voiced) // win
+    if nw < 10:
+        return 1.0
+    trimmed = voiced[:nw * win].reshape(nw, win)
+    rms = np.sqrt(np.mean(trimmed ** 2, axis=1) + 1e-12)
+    db = 20 * np.log10(np.maximum(rms, 1e-10))
+
+    # Step 3: Find signal boundaries and body boundaries.
+    signal_idx = np.where(db >= DECAY_SIGNAL_DB)[0]   # -68dB
+    body_idx = np.where(db >= SPEECH_DETECT_DB)[0]     # -40dB
+
+    if len(signal_idx) < 5:
+        return 1.0
+
+    first_signal = signal_idx[0]
+    last_signal = signal_idx[-1]
+    body_start = body_idx[0] if len(body_idx) > 0 else None
+    body_end = body_idx[-1] if len(body_idx) > 0 else None
+
+    scan_windows = int(DECAY_SCAN_MS / DECAY_WINDOW_MS)
+    shared = dict(window_ms=DECAY_WINDOW_MS, natural_grad=DECAY_NATURAL_GRAD,
+                  cliff_grad=DECAY_CLIFF_GRAD, min_span_ms=DECAY_MIN_SPAN_MS,
+                  good_span_ms=DECAY_GOOD_SPAN_MS)
+
+    # Step 4: TAIL score — backward from last_signal.
+    tail_score = _score_edge(db, anchor=last_signal, body_ref=body_end,
+                             scan_windows=scan_windows, direction='backward',
+                             **shared)
+
+    # Step 5: HEAD score — forward from first_signal.
+    #   Skips zero-fill region because first_signal is AFTER the zeros.
+    #   HEAD uses span=None to disable span scoring: Korean stops/affricates
+    #   naturally jump from silence to -40dB in one window (span=0), which
+    #   is normal, not truncation. Only gradient matters for onset quality.
+    head_score = _score_edge(db, anchor=first_signal, body_ref=None,
+                             scan_windows=scan_windows, direction='forward',
+                             **shared)
+
+    # Step 6: Final = min(head, tail). Both edges must be natural.
+    return min(head_score, tail_score)
+
+
 # ============================================================
 # COMPOSITE SCORING
 # ============================================================
@@ -503,7 +773,7 @@ def compose_decision(scores, tau_accept=DEFAULT_TAU_ACCEPT, tau_reject=DEFAULT_T
     if scores.get('S_continuity', 1.0) < HARD_REJECT_CONTINUITY:
         return 'REJECT', 0.0, flags + ['hard_reject:S_continuity']
 
-    # Composite: geometric mean of D1-D4, D6-D8 (D5 stability is optional gate)
+    # Composite: geometric mean of D1-D4, D6-D9 (D5 stability is optional gate)
     core_scores = [
         scores.get('S_unprompted', 0.5),
         scores.get('S_gap', 0.5),
@@ -512,6 +782,7 @@ def compose_decision(scores, tau_accept=DEFAULT_TAU_ACCEPT, tau_reject=DEFAULT_T
         scores.get('S_confidence', 0.5),
         scores.get('S_boundary', 0.5),
         scores.get('S_continuity', 0.5),
+        scores.get('S_decay', 0.5),
     ]
     S_comp = geometric_mean(core_scores)
 
@@ -552,6 +823,8 @@ def calibrate_thresholds(all_scores, known_good_files=None, known_bad_files=None
             scores.get('S_duration', 0.5),
             scores.get('S_confidence', 0.5),
             scores.get('S_boundary', 0.5),
+            scores.get('S_continuity', 0.5),
+            scores.get('S_decay', 0.5),
         ]
         composites[fname] = geometric_mean(core)
 
@@ -724,7 +997,7 @@ def score_all_segments(metadata_entries, wav_dir=None, eval_results=None,
         scores['S_confidence'] = compute_confidence_score(
             avg_logprob, no_speech_prob, compression_ratio)
 
-        # --- D7: S_boundary + D8: S_continuity ---
+        # --- D7: S_boundary + D8: S_continuity + D9: S_decay ---
         # Narrow the except: only swallow I/O errors. Code bugs (NameError,
         # ValueError in numeric ops) should surface, not silently fallback.
         try:
@@ -732,12 +1005,14 @@ def score_all_segments(metadata_entries, wav_dir=None, eval_results=None,
             if samples.ndim > 1:
                 samples = samples[:, 0]
         except (IOError, OSError, RuntimeError) as e:
-            logger.warning(f"Could not read {wav_path} for D7/D8: {e}")
+            logger.warning(f"Could not read {wav_path} for D7/D8/D9: {e}")
             scores['S_boundary'] = 0.0
             scores['S_continuity'] = 0.5
+            scores['S_decay'] = 0.5
         else:
             scores['S_boundary'] = compute_boundary_score(samples, sr)
             scores['S_continuity'] = compute_continuity_score(samples, sr)
+            scores['S_decay'] = compute_decay_score(samples, sr)
 
         all_scores[fname] = scores
 
@@ -787,7 +1062,7 @@ def run_composition(all_scores, tau_accept=None, tau_reject=None):
 
     # Per-dimension statistics
     dim_stats = {}
-    for dim in ['S_unprompted', 'S_gap', 'S_snr', 'S_duration', 'S_confidence', 'S_boundary', 'S_continuity']:
+    for dim in ['S_unprompted', 'S_gap', 'S_snr', 'S_duration', 'S_confidence', 'S_boundary', 'S_continuity', 'S_decay']:
         values = [s.get(dim, 0.5) for s in all_scores.values() if isinstance(s.get(dim), (int, float))]
         if values:
             dim_stats[dim] = {
@@ -807,6 +1082,20 @@ def run_composition(all_scores, tau_accept=None, tau_reject=None):
         script_breakdown[sno]['total'] += 1
         script_breakdown[sno][scores.get('verdict', 'REJECT').lower()] += 1
 
+    # Audio duration tally by verdict
+    duration_by_verdict = {'accept': 0.0, 'pending': 0.0, 'reject': 0.0}
+    wav_dir = WAV_DIR
+    for fname, scores in all_scores.items():
+        wav_path = os.path.join(wav_dir, fname)
+        if os.path.isfile(wav_path):
+            try:
+                info = sf.info(wav_path)
+                verdict_key = scores.get('verdict', 'REJECT').lower()
+                duration_by_verdict[verdict_key] = duration_by_verdict.get(verdict_key, 0.0) + info.duration
+            except Exception:
+                pass
+    total_duration_s = sum(duration_by_verdict.values())
+
     report = {
         'timestamp': datetime.datetime.now().isoformat(),
         'total_segments': total,
@@ -814,6 +1103,17 @@ def run_composition(all_scores, tau_accept=None, tau_reject=None):
         'pending_count': len(pending_list),
         'reject_count': len(reject_list),
         'composition_rate': round(composition_rate, 2),
+        'audio_duration': {
+            'total_seconds': round(total_duration_s, 1),
+            'total_hours': round(total_duration_s / 3600, 2),
+            'accept_seconds': round(duration_by_verdict['accept'], 1),
+            'accept_hours': round(duration_by_verdict['accept'] / 3600, 2),
+            'pending_seconds': round(duration_by_verdict['pending'], 1),
+            'pending_hours': round(duration_by_verdict['pending'] / 3600, 2),
+            'reject_seconds': round(duration_by_verdict['reject'], 1),
+            'reject_hours': round(duration_by_verdict['reject'] / 3600, 2),
+            'accept_pct': round(duration_by_verdict['accept'] / total_duration_s * 100, 1) if total_duration_s > 0 else 0,
+        },
         'calibration': calibration,
         'dimension_statistics': dim_stats,
         'per_script_breakdown': dict(script_breakdown),
@@ -821,7 +1121,187 @@ def run_composition(all_scores, tau_accept=None, tau_reject=None):
                                   if 'HUMAN_REVIEW_NEEDED' in s.get('flags', [])),
     }
 
+    # CSV export — always produced alongside JSON so any caller
+    # (pipeline_manager, CLI, driver scripts) gets the CSV automatically.
+    # Principle 1: composition output logic lives here, not in callers.
+    export_composition_csv(all_scores)
+
     return report, accept_list, pending_list, reject_list
+
+
+def export_composition_csv(all_scores, csv_path=None):
+    """Export composition results to CSV.
+
+    Columns match the 2026-04-04 format with S_continuity added for D8.
+    """
+    if csv_path is None:
+        csv_path = COMPOSITION_CSV_PATH
+
+    fieldnames = [
+        'filename', 'session_id', 'verdict', 'S_composite',
+        'S_unprompted', 'S_prompted', 'S_gap', 'S_snr',
+        'S_duration', 'S_confidence', 'S_boundary', 'S_continuity',
+        'S_decay', 'S_stability', 'ast_z', 'ast_p', 'flags', 'composition_flags',
+    ]
+
+    rows = []
+    for fname in sorted(all_scores.keys()):
+        s = all_scores[fname]
+        rows.append({
+            'filename': fname,
+            'session_id': s.get('session_id', ''),
+            'verdict': s.get('verdict', ''),
+            'S_composite': _fmt(s.get('S_composite')),
+            'S_unprompted': _fmt(s.get('S_unprompted')),
+            'S_prompted': _fmt(s.get('S_prompted')),
+            'S_gap': _fmt(s.get('S_gap')),
+            'S_snr': _fmt(s.get('S_snr')),
+            'S_duration': _fmt(s.get('S_duration')),
+            'S_confidence': _fmt(s.get('S_confidence')),
+            'S_boundary': _fmt(s.get('S_boundary')),
+            'S_continuity': _fmt(s.get('S_continuity')),
+            'S_decay': _fmt(s.get('S_decay')),
+            'S_stability': _fmt(s.get('S_stability')),
+            'ast_z': _fmt(s.get('ast_z')),
+            'ast_p': _fmt(s.get('ast_p')),
+            'flags': '|'.join(s.get('flags', [])),
+            'composition_flags': '|'.join(s.get('composition_flags', [])),
+        })
+
+    with open(csv_path, 'w', newline='', encoding='utf-8-sig') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    logger.info(f"Composition CSV ({len(rows)} rows): {csv_path}")
+    return csv_path
+
+
+def _fmt(v):
+    """Format a score value for CSV: round floats to 4dp, pass None as ''."""
+    if v is None:
+        return ''
+    if isinstance(v, float):
+        return round(v, 4)
+    return v
+
+
+def run_stability_pending(wav_dir=None, model_size="medium"):
+    """Run D5 stability scoring on PENDING pool items only.
+
+    Loads the PENDING pool from pending_pool.json, loads Whisper, transcribes
+    each WAV at multiple temperatures, computes S_stability, updates the
+    composition scores, and re-runs compose_decision to reclassify PENDING
+    items as ACCEPT or REJECT.
+
+    This is the second pass of the two-pass composition:
+      Pass 1 (--compose): score D1-D4, D6-D8 → classify → PENDING pool
+      Pass 2 (--stability-pending): score D5 on PENDING → reclassify
+    """
+    import gc
+    if wav_dir is None:
+        wav_dir = WAV_DIR
+
+    # Load pending pool
+    if not os.path.exists(PENDING_POOL_PATH):
+        logger.error(f"No pending pool found at {PENDING_POOL_PATH}. "
+                     f"Run --compose first.")
+        return
+    with open(PENDING_POOL_PATH, 'r', encoding='utf-8') as f:
+        pending = json.load(f)
+    logger.info(f"Loaded {len(pending)} PENDING items for stability scoring")
+    if not pending:
+        logger.info("Nothing to score.")
+        return
+
+    # Load existing composition scores
+    if not os.path.exists(SCORES_PATH):
+        logger.error(f"No scores found at {SCORES_PATH}. Run --compose first.")
+        return
+    with open(SCORES_PATH, 'r', encoding='utf-8') as f:
+        all_scores = json.load(f)
+
+    # Load Whisper for multi-temp transcription
+    import torch
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.info(f"[{device}] Loading Whisper model ({model_size}) for "
+                f"stability scoring...")
+    import whisper
+    model = whisper.load_model(model_size, device=device)
+
+    # Score D5 for each PENDING item
+    updated = 0
+    for idx, item in enumerate(pending):
+        fname = item['filename']
+        wav_path = os.path.join(wav_dir, fname)
+        if not os.path.exists(wav_path):
+            logger.warning(f"WAV not found: {wav_path}")
+            continue
+        s_stab = compute_stability_score(wav_path, model)
+        if fname in all_scores:
+            all_scores[fname]['S_stability'] = s_stab
+            updated += 1
+        if (idx + 1) % 10 == 0:
+            logger.info(f"  Stability scored: {idx+1}/{len(pending)}")
+
+    logger.info(f"Stability scored: {updated}/{len(pending)} items")
+
+    # Free model
+    del model
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # Re-run composition decisions with updated S_stability
+    # Need calibration thresholds — reload from existing calibration
+    tau_accept, tau_reject = DEFAULT_TAU_ACCEPT, DEFAULT_TAU_REJECT
+    if os.path.exists(CALIBRATION_PATH):
+        with open(CALIBRATION_PATH, 'r', encoding='utf-8') as f:
+            cal = json.load(f)
+        tau_accept = cal.get('tau_accept', DEFAULT_TAU_ACCEPT)
+        tau_reject = cal.get('tau_reject', DEFAULT_TAU_REJECT)
+
+    # Reclassify
+    reclassified = {'ACCEPT': 0, 'PENDING': 0, 'REJECT': 0}
+    new_accept, new_pending, new_reject = [], [], []
+    for item in pending:
+        fname = item['filename']
+        scores = all_scores.get(fname, {})
+        verdict, composite, flags = compose_decision(scores, tau_accept, tau_reject)
+        scores['S_composite'] = composite
+        reclassified[verdict] += 1
+        entry = {'filename': fname, 'verdict': verdict,
+                 'S_composite': composite, 'scores': scores, 'flags': flags}
+        if verdict == 'ACCEPT':
+            new_accept.append(entry)
+        elif verdict == 'PENDING':
+            new_pending.append(entry)
+        else:
+            new_reject.append(entry)
+
+    # Update scores file + CSV
+    with open(SCORES_PATH, 'w', encoding='utf-8') as f:
+        json.dump(all_scores, f, indent=2, ensure_ascii=False)
+    export_composition_csv(all_scores)
+
+    # Update pending pool (only items that stayed PENDING)
+    with open(PENDING_POOL_PATH, 'w', encoding='utf-8') as f:
+        json.dump(new_pending, f, indent=2, ensure_ascii=False)
+
+    # Append new rejects to rejection log
+    if new_reject:
+        existing_rejects = []
+        if os.path.exists(REJECTION_LOG_PATH):
+            with open(REJECTION_LOG_PATH, 'r', encoding='utf-8') as f:
+                existing_rejects = json.load(f)
+        existing_rejects.extend(new_reject)
+        with open(REJECTION_LOG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(existing_rejects, f, indent=2, ensure_ascii=False)
+
+    logger.info(f"\nStability reclassification:")
+    logger.info(f"  {reclassified['ACCEPT']} PENDING → ACCEPT")
+    logger.info(f"  {reclassified['PENDING']} remained PENDING")
+    logger.info(f"  {reclassified['REJECT']} PENDING → REJECT")
 
 
 # ============================================================
@@ -833,17 +1313,28 @@ def main():
                         help='Compute all scoring dimensions (default)')
     parser.add_argument('--compose', action='store_true',
                         help='Run composition decisions after scoring')
+    parser.add_argument('--stability-pending', action='store_true',
+                        help='Run D5 stability scoring on PENDING pool '
+                             '(requires Whisper GPU, second pass after --compose)')
     parser.add_argument('--report', action='store_true',
                         help='Generate report from existing scores')
     parser.add_argument('--wav-dir', default=WAV_DIR,
                         help='WAV directory to score')
     parser.add_argument('--metadata', default=METADATA_PATH,
                         help='Metadata file path')
+    parser.add_argument('--model', default='medium',
+                        choices=['tiny', 'base', 'small', 'medium', 'large'],
+                        help='Whisper model for stability scoring (default: medium)')
     args = parser.parse_args()
 
     logger.info("=" * 60)
     logger.info("Selective Data Composer — Stage 4.5")
     logger.info("=" * 60)
+
+    # D5 stability: separate execution path (GPU-heavy, PENDING-only)
+    if args.stability_pending:
+        run_stability_pending(wav_dir=args.wav_dir, model_size=args.model)
+        return
 
     # Load metadata
     entries = load_metadata(args.metadata)
@@ -910,6 +1401,7 @@ def main():
         logger.info(f"Rejection log ({len(reject_list)} items): {REJECTION_LOG_PATH}")
 
         # Summary
+        ad = report['audio_duration']
         logger.info(f"\n{'=' * 60}")
         logger.info(f"COMPOSITION COMPLETE")
         logger.info(f"  Total segments: {report['total_segments']}")
@@ -917,6 +1409,11 @@ def main():
         logger.info(f"  PENDING: {report['pending_count']}")
         logger.info(f"  REJECT: {report['reject_count']}")
         logger.info(f"  Human review needed: {report['human_review_count']}")
+        logger.info(f"  ─── Audio Duration ───")
+        logger.info(f"  Total audio:  {ad['total_hours']:.2f}h ({ad['total_seconds']:.0f}s)")
+        logger.info(f"  ACCEPT audio: {ad['accept_hours']:.2f}h ({ad['accept_pct']:.1f}%)")
+        logger.info(f"  PENDING audio: {ad['pending_hours']:.2f}h")
+        logger.info(f"  REJECT audio: {ad['reject_hours']:.2f}h")
         logger.info(f"{'=' * 60}")
 
 
