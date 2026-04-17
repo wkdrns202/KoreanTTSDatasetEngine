@@ -55,3 +55,28 @@ TaskLogs/skipped_lines.log
 TaskLogs/skipped_script2.log
 TaskLogs/skipped_script5.log
 logs/skipped_lines.log
+
+# Experiment / R&D clutter at repo root (one-off scripts, not for history)
+/_*.py
+/_*.bat
+/skipped_Script_*.log
+/files_to_remove.txt
+/run_experiment.bat
+..bfg-report/
+
+# Experiment stdout / intermediate logs
+logs/_*.log
+logs/_*.txt
+logs/AgenticReviewer/
+logs/r6_ablation_samples/
+
+# Per-experiment JSON results (runtime outputs, regenerable)
+logs/ending_truncation_report.json
+logs/envelope_raw_ab.json
+logs/envelope_strip_ab_tiny.json
+logs/r6_ablation_results.json
+logs/threshold_ab_results.json
+
+# Experiment debug WAVs
+experiments/*/*.wav
+experiments/*/wavs/
