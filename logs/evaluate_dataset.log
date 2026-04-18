@@ -1,66 +1,346 @@
-2026-02-20 22:09:09,763 [INFO] Loaded 2063 metadata entries
-2026-02-20 22:09:09,764 [INFO] Filtered to Script_5: 785 entries
-2026-02-20 22:09:10,535 [INFO] Found 785/785 WAV files
-2026-02-20 22:09:10,572 [INFO] Resumed from checkpoint: 4196 already processed
-2026-02-20 22:09:10,604 [INFO] [cuda] Loading Whisper model (medium)...
-2026-02-20 22:09:23,614 [INFO] Evaluating 3 segments...
-2026-02-20 22:09:29,423 [INFO] 
+2026-04-14 23:59:33,506 [INFO] Loaded 1473 metadata entries
+2026-04-14 23:59:33,882 [INFO] Found 1473/1473 WAV files
+2026-04-14 23:59:33,909 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-14 23:59:40,566 [INFO] Evaluating 1473 segments...
+2026-04-15 00:03:13,551 [INFO] Checkpoint saved (100 processed)
+2026-04-15 00:06:56,449 [INFO] Checkpoint saved (200 processed)
+2026-04-15 00:10:23,730 [INFO] Checkpoint saved (300 processed)
+2026-04-15 00:13:48,987 [INFO] Checkpoint saved (400 processed)
+2026-04-15 00:17:15,129 [INFO] Checkpoint saved (500 processed)
+2026-04-15 00:21:03,769 [INFO] Checkpoint saved (600 processed)
+2026-04-15 00:24:33,547 [INFO] Checkpoint saved (700 processed)
+2026-04-15 00:27:51,527 [INFO] Checkpoint saved (800 processed)
+2026-04-15 00:31:08,506 [INFO] Checkpoint saved (900 processed)
+2026-04-15 00:34:26,756 [INFO] Checkpoint saved (1000 processed)
+2026-04-15 00:37:50,391 [INFO] Checkpoint saved (1100 processed)
+2026-04-15 00:41:47,364 [INFO] Checkpoint saved (1200 processed)
+2026-04-15 00:46:17,055 [INFO] Checkpoint saved (1300 processed)
+2026-04-15 00:51:19,075 [INFO] Checkpoint saved (1400 processed)
+2026-04-15 00:54:56,249 [INFO] 
 ==================================================
-2026-02-20 22:09:29,423 [INFO] TIER 2: Re-evaluating 206 failed segments with Whisper large + GT-prompt
-2026-02-20 22:09:29,423 [INFO] [cuda] Loading Whisper model (large)...
-2026-02-20 22:29:07,521 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 22:29:08,241 [WARNING] Tier 2 error on Script_2_0622.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 22:34:04,372 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 22:34:05,806 [WARNING] Tier 2 error on Script_2_0684.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 22:44:07,851 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 22:44:14,870 [WARNING] Tier 2 error on Script_2_0921.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 22:50:55,575 [INFO] Tier 2 checkpoint: 100/206, recovered 7
-2026-02-20 22:54:44,729 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 22:54:49,843 [WARNING] Tier 2 error on Script_2_1288.wav: cannot reshape tensor of 0 elements into shape [1, 0, 20, -1] because the unspecified dimension size -1 can be any value and is ambiguous
-2026-02-20 22:54:50,882 [WARNING] Tier 2 error on Script_2_1294.wav: cannot reshape tensor of 0 elements into shape [1, 0, 20, -1] because the unspecified dimension size -1 can be any value and is ambiguous
-2026-02-20 23:26:25,517 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:28:25,522 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:30:25,589 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:30:48,624 [WARNING] Tier 2 error on Script_4_0898.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 23:36:24,598 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:39:50,374 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:40:13,106 [WARNING] Tier 2 error on Script_4_0954.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 23:49:20,277 [WARNING] Whisper transcription timed out after 120s
-2026-02-20 23:50:00,024 [WARNING] Tier 2 error on Script_5_0101.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
-2026-02-20 23:54:28,070 [INFO] Tier 2 checkpoint: 200/206, recovered 13
-2026-02-20 23:59:23,721 [INFO] Tier 2 complete: 13/206 segments recovered
-2026-02-20 23:59:23,870 [INFO] Tier 2 recovered 13 segments
-2026-02-20 23:59:23,870 [INFO] 
+2026-04-15 00:54:56,249 [INFO] TIER 2: Re-evaluating 41 failed segments with Whisper large + GT-prompt
+2026-04-15 00:54:56,249 [INFO] [cuda] Loading Whisper model (large)...
+2026-04-15 01:14:07,810 [INFO] Tier 2 complete: 2/41 segments recovered
+2026-04-15 01:14:07,889 [INFO] Tier 2 recovered 2 segments
+2026-04-15 01:14:07,889 [INFO] 
 ==================================================
-2026-02-20 23:59:23,870 [INFO] STAGE 4: Aggregating evaluation results...
-2026-02-20 23:59:23,890 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\logs\evaluation_report.json
-2026-02-20 23:59:23,933 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
-2026-02-20 23:59:23,934 [INFO] 
+2026-04-15 01:14:07,890 [INFO] STAGE 4: Aggregating evaluation results...
+2026-04-15 01:14:07,896 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\2026-04-14_final_v3\eval_logs\evaluation_report.json
+2026-04-15 01:14:07,915 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
+2026-04-15 01:14:07,915 [INFO] 
 ============================================================
-2026-02-20 23:59:23,934 [INFO] EVALUATION COMPLETE
-2026-02-20 23:59:23,934 [INFO]   Total segments: 4199
-2026-02-20 23:59:23,934 [INFO]   R1 (Alignment Accuracy):    95.48%
-2026-02-20 23:59:23,934 [INFO]   R2 (Boundary Noise Clean):  100.0%
-2026-02-20 23:59:23,934 [INFO]   R6 (Audio Envelope):        99.93%
-2026-02-20 23:59:23,934 [INFO]   R3 (Combined Pass Rate):    95.4%
-2026-02-20 23:59:23,934 [INFO]   Pre-attack: min=400.0ms, mean=409.31ms
-2026-02-20 23:59:23,934 [INFO]   Tail silence: min=724.35ms, mean=737.99ms
-2026-02-20 23:59:23,934 [INFO]   Passed: 4006, Failed: 193
-2026-02-20 23:59:23,934 [INFO] 
+2026-04-15 01:14:07,915 [INFO] EVALUATION COMPLETE
+2026-04-15 01:14:07,915 [INFO]   Total segments: 1473
+2026-04-15 01:14:07,915 [INFO]   R1 (Alignment Accuracy):    97.69%
+2026-04-15 01:14:07,915 [INFO]   R2 (Boundary Noise Clean):  100.0%
+2026-04-15 01:14:07,915 [INFO]   R6 (Audio Envelope):        99.66%
+2026-04-15 01:14:07,915 [INFO]   R3 (Combined Pass Rate):    97.35%
+2026-04-15 01:14:07,915 [INFO]   Pre-attack: min=400.0ms, mean=497.06ms
+2026-04-15 01:14:07,915 [INFO]   Tail silence: min=723.62ms, mean=1207.62ms
+2026-04-15 01:14:07,915 [INFO]   Passed: 1434, Failed: 39
+2026-04-15 01:14:07,915 [INFO] 
   Failure Type Breakdown:
-2026-02-20 23:59:23,934 [INFO]     Type A (Alignment Shift):    6
-2026-02-20 23:59:23,934 [INFO]     Type B (Merge/Split):        0
-2026-02-20 23:59:23,934 [INFO]     Type C (Boundary Noise):     0
-2026-02-20 23:59:23,934 [INFO]     Type D (Whisper Error):       184
-2026-02-20 23:59:23,934 [INFO]     Type E (Script Mismatch):    0
-2026-02-20 23:59:23,934 [INFO]     Type F (Envelope Violation): 3
-2026-02-20 23:59:23,935 [INFO] 
+2026-04-15 01:14:07,915 [INFO]     Type A (Alignment Shift):    12
+2026-04-15 01:14:07,915 [INFO]     Type B (Merge/Split):        0
+2026-04-15 01:14:07,916 [INFO]     Type C (Boundary Noise):     0
+2026-04-15 01:14:07,916 [INFO]     Type D (Whisper Error):       22
+2026-04-15 01:14:07,916 [INFO]     Type E (Script Mismatch):    0
+2026-04-15 01:14:07,916 [INFO]     Type F (Envelope Violation): 5
+2026-04-15 01:14:07,916 [INFO] 
   Per-Script Breakdown:
-2026-02-20 23:59:23,935 [INFO]     Script_1: 294/298 (98.66%)
-2026-02-20 23:59:23,935 [INFO]     Script_2: 1146/1254 (91.39%)
-2026-02-20 23:59:23,935 [INFO]     Script_3: 841/865 (97.23%)
-2026-02-20 23:59:23,935 [INFO]     Script_4: 949/990 (95.86%)
-2026-02-20 23:59:23,935 [INFO]     Script_5: 776/792 (97.98%)
-2026-02-20 23:59:23,935 [INFO] ============================================================
-2026-02-20 23:59:23,935 [INFO] 
+2026-04-15 01:14:07,916 [INFO]     Script_1: 644/675 (95.41%)
+2026-04-15 01:14:07,916 [INFO]     Script_5: 464/471 (98.51%)
+2026-04-15 01:14:07,916 [INFO]     Script_6: 326/327 (99.69%)
+2026-04-15 01:14:07,916 [INFO] ============================================================
+2026-04-15 01:14:07,916 [INFO] 
 *** ALL REQUIREMENTS MET (>= 95%) — Ready for Stage 5 Finalization ***
+2026-04-15 08:38:45,250 [INFO] Loaded 1 metadata entries
+2026-04-15 08:38:45,250 [INFO] Found 1/1 WAV files
+2026-04-15 08:38:45,295 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-15 08:38:52,101 [INFO] Evaluating 1 segments...
+2026-04-15 08:38:56,465 [INFO] Tier 2: No failed segments to re-evaluate
+2026-04-15 08:38:56,465 [INFO] 
+==================================================
+2026-04-15 08:38:56,466 [INFO] STAGE 4: Aggregating evaluation results...
+2026-04-15 08:38:56,468 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_L313_only\eval_logs\evaluation_report.json
+2026-04-15 08:38:56,471 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
+2026-04-15 08:38:56,471 [INFO] 
+============================================================
+2026-04-15 08:38:56,471 [INFO] EVALUATION COMPLETE
+2026-04-15 08:38:56,471 [INFO]   Total segments: 1
+2026-04-15 08:38:56,471 [INFO]   R1 (Alignment Accuracy):    100.0%
+2026-04-15 08:38:56,472 [INFO]   R2 (Boundary Noise Clean):  100.0%
+2026-04-15 08:38:56,472 [INFO]   R6 (Audio Envelope):        100.0%
+2026-04-15 08:38:56,472 [INFO]   R3 (Combined Pass Rate):    100.0%
+2026-04-15 08:38:56,472 [INFO]   Pre-attack: min=500.0ms, mean=500.0ms
+2026-04-15 08:38:56,472 [INFO]   Tail silence: min=730.0ms, mean=730.0ms
+2026-04-15 08:38:56,472 [INFO]   Passed: 1, Failed: 0
+2026-04-15 08:38:56,472 [INFO] 
+  Failure Type Breakdown:
+2026-04-15 08:38:56,472 [INFO]     Type A (Alignment Shift):    0
+2026-04-15 08:38:56,472 [INFO]     Type B (Merge/Split):        0
+2026-04-15 08:38:56,472 [INFO]     Type C (Boundary Noise):     0
+2026-04-15 08:38:56,472 [INFO]     Type D (Whisper Error):       0
+2026-04-15 08:38:56,472 [INFO]     Type E (Script Mismatch):    0
+2026-04-15 08:38:56,472 [INFO]     Type F (Envelope Violation): 0
+2026-04-15 08:38:56,472 [INFO] 
+  Per-Script Breakdown:
+2026-04-15 08:38:56,472 [INFO]     Script_1: 1/1 (100.0%)
+2026-04-15 08:38:56,472 [INFO] ============================================================
+2026-04-15 08:38:56,472 [INFO] 
+*** ALL REQUIREMENTS MET (>= 95%) — Ready for Stage 5 Finalization ***
+2026-04-15 08:38:56,473 [INFO] ============================================================
+2026-04-15 08:38:56,473 [INFO] Selective Data Composer — Stage 4.5
+2026-04-15 08:38:56,473 [INFO] ============================================================
+2026-04-15 08:38:56,474 [INFO] Loaded 1 metadata entries
+2026-04-15 08:38:56,474 [INFO] Loaded 1 evaluation results
+2026-04-15 08:38:56,474 [INFO] Discovered 20 recording sessions
+2026-04-15 08:38:56,474 [INFO] Computing AST baseline (per-session)...
+2026-04-15 08:38:56,474 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-15 08:38:56,482 [INFO] Scored 1 segments
+2026-04-15 08:38:56,485 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_L313_only\eval_logs\composition_scores.json
+2026-04-15 08:38:56,485 [INFO] Running composition decisions...
+2026-04-15 08:38:56,485 [WARNING] Only 1 known-good samples — using defaults
+2026-04-15 08:38:56,497 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_L313_only\eval_logs\composition_report.json
+2026-04-15 08:38:56,500 [INFO] Pending pool (1 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_L313_only\eval_logs\pending_pool.json
+2026-04-15 08:38:56,502 [INFO] Rejection log (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_L313_only\eval_logs\rejection_log.json
+2026-04-15 08:38:56,502 [INFO] 
+============================================================
+2026-04-15 08:38:56,502 [INFO] COMPOSITION COMPLETE
+2026-04-15 08:38:56,502 [INFO]   Total segments: 1
+2026-04-15 08:38:56,502 [INFO]   ACCEPT: 0 (0.0%)
+2026-04-15 08:38:56,502 [INFO]   PENDING: 1
+2026-04-15 08:38:56,502 [INFO]   REJECT: 0
+2026-04-15 08:38:56,502 [INFO]   Human review needed: 0
+2026-04-15 08:38:56,502 [INFO] ============================================================
+2026-04-15 10:35:06,383 [INFO] Loaded 18 metadata entries
+2026-04-15 10:35:06,385 [INFO] Found 18/18 WAV files
+2026-04-15 10:35:06,414 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-15 10:35:13,157 [INFO] Evaluating 18 segments...
+2026-04-15 10:35:51,830 [INFO] 
+==================================================
+2026-04-15 10:35:51,830 [INFO] TIER 2: Re-evaluating 1 failed segments with Whisper large + GT-prompt
+2026-04-15 10:35:51,830 [INFO] [cuda] Loading Whisper model (large)...
+2026-04-15 10:36:35,892 [INFO] Tier 2 complete: 0/1 segments recovered
+2026-04-15 10:36:35,892 [INFO] 
+==================================================
+2026-04-15 10:36:35,892 [INFO] STAGE 4: Aggregating evaluation results...
+2026-04-15 10:36:35,897 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\evaluation_report.json
+2026-04-15 10:36:35,900 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
+2026-04-15 10:36:35,900 [INFO] 
+============================================================
+2026-04-15 10:36:35,900 [INFO] EVALUATION COMPLETE
+2026-04-15 10:36:35,900 [INFO]   Total segments: 18
+2026-04-15 10:36:35,900 [INFO]   R1 (Alignment Accuracy):    94.44%
+2026-04-15 10:36:35,900 [INFO]   R2 (Boundary Noise Clean):  100.0%
+2026-04-15 10:36:35,900 [INFO]   R6 (Audio Envelope):        100.0%
+2026-04-15 10:36:35,900 [INFO]   R3 (Combined Pass Rate):    94.44%
+2026-04-15 10:36:35,900 [INFO]   Pre-attack: min=490.0ms, mean=499.44ms
+2026-04-15 10:36:35,900 [INFO]   Tail silence: min=730.0ms, mean=1013.33ms
+2026-04-15 10:36:35,900 [INFO]   Passed: 17, Failed: 1
+2026-04-15 10:36:35,900 [INFO] 
+  Failure Type Breakdown:
+2026-04-15 10:36:35,900 [INFO]     Type A (Alignment Shift):    0
+2026-04-15 10:36:35,900 [INFO]     Type B (Merge/Split):        0
+2026-04-15 10:36:35,901 [INFO]     Type C (Boundary Noise):     0
+2026-04-15 10:36:35,901 [INFO]     Type D (Whisper Error):       1
+2026-04-15 10:36:35,901 [INFO]     Type E (Script Mismatch):    0
+2026-04-15 10:36:35,901 [INFO]     Type F (Envelope Violation): 0
+2026-04-15 10:36:35,901 [INFO] 
+  Per-Script Breakdown:
+2026-04-15 10:36:35,901 [INFO]     Script_1: 17/18 (94.44%)
+2026-04-15 10:36:35,901 [INFO] ============================================================
+2026-04-15 10:36:35,901 [INFO] 
+*** REQUIREMENTS NOT MET — Stage 6 R&D iteration needed ***
+2026-04-15 10:36:35,901 [INFO]   Dominant failure: Type_D_whisper_error (1 segments)
+2026-04-15 10:36:35,902 [INFO] ============================================================
+2026-04-15 10:36:35,902 [INFO] Selective Data Composer — Stage 4.5
+2026-04-15 10:36:35,902 [INFO] ============================================================
+2026-04-15 10:36:35,902 [INFO] Loaded 18 metadata entries
+2026-04-15 10:36:35,903 [INFO] Loaded 18 evaluation results
+2026-04-15 10:36:35,904 [INFO] Discovered 20 recording sessions
+2026-04-15 10:36:35,904 [INFO] Computing AST baseline (per-session)...
+2026-04-15 10:36:35,904 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-15 10:36:36,091 [INFO] Scored 18 segments
+2026-04-15 10:36:36,096 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\composition_scores.json
+2026-04-15 10:36:36,096 [INFO] Running composition decisions...
+2026-04-15 10:36:36,184 [INFO] Calibrated thresholds: ACCEPT >= 0.0183 (95% CI: 0.0182-0.0184), REJECT < 0.6500
+2026-04-15 10:36:36,190 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\composition_report.json
+2026-04-15 10:36:36,192 [INFO] Pending pool (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\pending_pool.json
+2026-04-15 10:36:36,194 [INFO] Rejection log (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\rejection_log.json
+2026-04-15 10:36:36,195 [INFO] 
+============================================================
+2026-04-15 10:36:36,195 [INFO] COMPOSITION COMPLETE
+2026-04-15 10:36:36,195 [INFO]   Total segments: 18
+2026-04-15 10:36:36,195 [INFO]   ACCEPT: 18 (100.0%)
+2026-04-15 10:36:36,195 [INFO]   PENDING: 0
+2026-04-15 10:36:36,195 [INFO]   REJECT: 0
+2026-04-15 10:36:36,195 [INFO]   Human review needed: 0
+2026-04-15 10:36:36,195 [INFO] ============================================================
+2026-04-15 11:00:42,351 [INFO] ============================================================
+2026-04-15 11:00:42,351 [INFO] Selective Data Composer — Stage 4.5
+2026-04-15 11:00:42,351 [INFO] ============================================================
+2026-04-15 11:00:42,351 [INFO] Loaded 18 metadata entries
+2026-04-15 11:00:42,352 [INFO] Loaded 18 evaluation results
+2026-04-15 11:00:42,352 [INFO] Discovered 20 recording sessions
+2026-04-15 11:00:42,353 [INFO] Computing AST baseline (per-session)...
+2026-04-15 11:00:42,353 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-15 11:00:42,493 [INFO] Scored 18 segments
+2026-04-15 11:00:42,497 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\composition_scores.json
+2026-04-15 11:00:42,497 [INFO] Running composition decisions...
+2026-04-15 11:00:42,585 [INFO] Calibrated thresholds: ACCEPT >= 0.8482 (95% CI: 0.8457-0.8537), REJECT < 0.6500
+2026-04-15 11:00:42,590 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\composition_report.json
+2026-04-15 11:00:42,593 [INFO] Pending pool (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\pending_pool.json
+2026-04-15 11:00:42,595 [INFO] Rejection log (1 items): G:\Projects\AI_Research\TTSDataSetCleanser\datasets\test_tail300\eval_logs\rejection_log.json
+2026-04-15 11:00:42,595 [INFO] 
+============================================================
+2026-04-15 11:00:42,595 [INFO] COMPOSITION COMPLETE
+2026-04-15 11:00:42,595 [INFO]   Total segments: 18
+2026-04-15 11:00:42,595 [INFO]   ACCEPT: 17 (94.4%)
+2026-04-15 11:00:42,595 [INFO]   PENDING: 0
+2026-04-15 11:00:42,595 [INFO]   REJECT: 1
+2026-04-15 11:00:42,595 [INFO]   Human review needed: 0
+2026-04-15 11:00:42,596 [INFO] ============================================================
+2026-04-16 00:38:57,292 [INFO] Loaded 18 metadata entries
+2026-04-16 00:38:57,293 [INFO] Found 18/18 WAV files
+2026-04-16 00:38:57,324 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-16 00:39:03,817 [INFO] Evaluating 18 segments...
+2026-04-16 00:39:41,698 [INFO] 
+==================================================
+2026-04-16 00:39:41,698 [INFO] TIER 2: Re-evaluating 1 failed segments with Whisper large + GT-prompt
+2026-04-16 00:39:41,698 [INFO] [cuda] Loading Whisper model (large)...
+2026-04-16 13:29:48,022 [INFO] Loaded 1481 metadata entries
+2026-04-16 13:29:48,425 [INFO] Found 1481/1481 WAV files
+2026-04-16 13:29:48,537 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-16 13:29:55,483 [INFO] Evaluating 1481 segments...
+2026-04-16 13:33:24,563 [INFO] Checkpoint saved (100 processed)
+2026-04-16 13:36:51,137 [INFO] Checkpoint saved (200 processed)
+2026-04-16 13:40:20,874 [INFO] Checkpoint saved (300 processed)
+2026-04-16 13:43:45,599 [INFO] Checkpoint saved (400 processed)
+2026-04-16 13:47:14,742 [INFO] Checkpoint saved (500 processed)
+2026-04-16 13:50:51,696 [INFO] Checkpoint saved (600 processed)
+2026-04-16 13:54:18,858 [INFO] Checkpoint saved (700 processed)
+2026-04-16 13:57:31,755 [INFO] Checkpoint saved (800 processed)
+2026-04-16 14:00:41,222 [INFO] Checkpoint saved (900 processed)
+2026-04-16 14:03:53,059 [INFO] Checkpoint saved (1000 processed)
+2026-04-16 14:07:16,119 [INFO] Checkpoint saved (1100 processed)
+2026-04-16 14:11:06,967 [INFO] Checkpoint saved (1200 processed)
+2026-04-16 14:15:39,975 [INFO] Checkpoint saved (1300 processed)
+2026-04-16 14:20:23,933 [INFO] Checkpoint saved (1400 processed)
+2026-04-16 14:24:13,637 [INFO] 
+==================================================
+2026-04-16 14:24:13,637 [INFO] TIER 2: Re-evaluating 40 failed segments with Whisper large + GT-prompt
+2026-04-16 14:24:13,637 [INFO] [cuda] Loading Whisper model (large)...
+2026-04-18 01:26:52,623 [INFO] Loaded 5443 metadata entries
+2026-04-18 01:26:56,349 [INFO] Found 5443/5443 WAV files
+2026-04-18 01:26:56,352 [INFO] Checkpoint cleared
+2026-04-18 01:26:56,400 [INFO] [cuda] Loading Whisper model (medium)...
+2026-04-18 01:27:05,991 [INFO] Evaluating 5443 segments...
+2026-04-18 01:30:33,807 [INFO] Checkpoint saved (100 processed)
+2026-04-18 01:33:37,790 [INFO] Checkpoint saved (200 processed)
+2026-04-18 01:36:56,087 [INFO] Checkpoint saved (300 processed)
+2026-04-18 01:40:10,756 [INFO] Checkpoint saved (400 processed)
+2026-04-18 01:43:21,593 [INFO] Checkpoint saved (500 processed)
+2026-04-18 01:46:26,585 [INFO] Checkpoint saved (600 processed)
+2026-04-18 01:49:32,034 [INFO] Checkpoint saved (700 processed)
+2026-04-18 01:52:43,172 [INFO] Checkpoint saved (800 processed)
+2026-04-18 01:55:56,356 [INFO] Checkpoint saved (900 processed)
+2026-04-18 01:59:15,527 [INFO] Checkpoint saved (1000 processed)
+2026-04-18 02:02:26,367 [INFO] Checkpoint saved (1100 processed)
+2026-04-18 02:05:24,699 [INFO] Checkpoint saved (1200 processed)
+2026-04-18 02:08:22,640 [INFO] Checkpoint saved (1300 processed)
+2026-04-18 02:11:41,631 [INFO] Checkpoint saved (1400 processed)
+2026-04-18 02:14:52,100 [INFO] Checkpoint saved (1500 processed)
+2026-04-18 02:18:23,276 [INFO] Checkpoint saved (1600 processed)
+2026-04-18 02:21:28,726 [INFO] Checkpoint saved (1700 processed)
+2026-04-18 02:24:44,593 [INFO] Checkpoint saved (1800 processed)
+2026-04-18 02:28:02,981 [INFO] Checkpoint saved (1900 processed)
+2026-04-18 02:31:01,752 [INFO] Checkpoint saved (2000 processed)
+2026-04-18 02:34:25,419 [INFO] Checkpoint saved (2100 processed)
+2026-04-18 02:38:05,482 [INFO] Checkpoint saved (2200 processed)
+2026-04-18 02:41:25,678 [INFO] Checkpoint saved (2300 processed)
+2026-04-18 02:44:57,505 [INFO] Checkpoint saved (2400 processed)
+2026-04-18 02:48:03,388 [INFO] Checkpoint saved (2500 processed)
+2026-04-18 02:51:19,447 [INFO] Checkpoint saved (2600 processed)
+2026-04-18 02:54:23,777 [INFO] Checkpoint saved (2700 processed)
+2026-04-18 02:57:31,133 [INFO] Checkpoint saved (2800 processed)
+2026-04-18 03:00:29,666 [INFO] Checkpoint saved (2900 processed)
+2026-04-18 03:03:36,369 [INFO] Checkpoint saved (3000 processed)
+2026-04-18 03:06:35,342 [INFO] Checkpoint saved (3100 processed)
+2026-04-18 03:10:09,032 [INFO] Checkpoint saved (3200 processed)
+2026-04-18 03:13:55,367 [INFO] Checkpoint saved (3300 processed)
+2026-04-18 03:17:53,037 [INFO] Checkpoint saved (3400 processed)
+2026-04-18 03:21:27,153 [INFO] Checkpoint saved (3500 processed)
+2026-04-18 03:25:11,598 [INFO] Checkpoint saved (3600 processed)
+2026-04-18 03:28:47,542 [INFO] Checkpoint saved (3700 processed)
+2026-04-18 03:31:56,633 [INFO] Checkpoint saved (3800 processed)
+2026-04-18 03:35:35,674 [INFO] Checkpoint saved (3900 processed)
+2026-04-18 03:39:22,941 [INFO] Checkpoint saved (4000 processed)
+2026-04-18 03:42:48,346 [INFO] Checkpoint saved (4100 processed)
+2026-04-18 03:46:29,426 [INFO] Checkpoint saved (4200 processed)
+2026-04-18 03:49:48,536 [INFO] Checkpoint saved (4300 processed)
+2026-04-18 03:52:57,673 [INFO] Checkpoint saved (4400 processed)
+2026-04-18 03:56:11,219 [INFO] Checkpoint saved (4500 processed)
+2026-04-18 03:59:11,292 [INFO] Checkpoint saved (4600 processed)
+2026-04-18 04:02:17,560 [INFO] Checkpoint saved (4700 processed)
+2026-04-18 04:05:16,342 [INFO] Checkpoint saved (4800 processed)
+2026-04-18 04:08:08,522 [INFO] Checkpoint saved (4900 processed)
+2026-04-18 04:11:09,726 [INFO] Checkpoint saved (5000 processed)
+2026-04-18 04:14:11,384 [INFO] Checkpoint saved (5100 processed)
+2026-04-18 04:18:05,797 [INFO] Checkpoint saved (5200 processed)
+2026-04-18 04:22:15,319 [INFO] Checkpoint saved (5300 processed)
+2026-04-18 04:26:43,588 [INFO] Checkpoint saved (5400 processed)
+2026-04-18 04:28:39,996 [INFO] 
+==================================================
+2026-04-18 04:28:39,997 [INFO] TIER 2: Re-evaluating 349 failed segments with Whisper large + GT-prompt
+2026-04-18 04:28:39,997 [INFO] [cuda] Loading Whisper model (large)...
+2026-04-18 04:31:37,051 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 04:31:39,098 [WARNING] Tier 2 error on Script_1_0066.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-04-18 04:33:49,339 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 04:54:44,738 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 04:54:46,168 [WARNING] Tier 2 error on Script_2_0343.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-04-18 04:54:48,433 [WARNING] Tier 2 error on Script_2_0368.wav: Expected key.size(1) == value.size(1) to be true, but got false.  (Could this error message be improved?  If so, please report an enhancement request to PyTorch.)
+2026-04-18 04:58:16,349 [INFO] Tier 2 checkpoint: 100/349, recovered 7
+2026-04-18 05:05:28,773 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 05:18:21,285 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 05:39:40,005 [INFO] Tier 2 checkpoint: 200/349, recovered 23
+2026-04-18 05:48:04,078 [WARNING] Whisper transcription timed out after 120s
+2026-04-18 06:09:09,925 [INFO] Tier 2 checkpoint: 300/349, recovered 33
+2026-04-18 06:20:29,435 [INFO] Tier 2 complete: 39/349 segments recovered
+2026-04-18 06:20:29,698 [INFO] Tier 2 recovered 39 segments
+2026-04-18 06:20:29,698 [INFO] 
+==================================================
+2026-04-18 06:20:29,698 [INFO] STAGE 4: Aggregating evaluation results...
+2026-04-18 06:20:29,727 [INFO] Report saved: G:\Projects\AI_Research\TTSDataSetCleanser\logs\evaluation_report.json
+2026-04-18 06:20:29,781 [INFO] Validation CSV saved: G:\Projects\AI_Research\TTSDataSetCleanser\datasets\validation_results.csv
+2026-04-18 06:20:29,781 [INFO] 
+============================================================
+2026-04-18 06:20:29,781 [INFO] EVALUATION COMPLETE
+2026-04-18 06:20:29,781 [INFO]   Total segments: 5443
+2026-04-18 06:20:29,781 [INFO]   R1 (Alignment Accuracy):    90.02%
+2026-04-18 06:20:29,781 [INFO]   R2 (Boundary Noise Clean):  100.0%
+2026-04-18 06:20:29,781 [INFO]   R6 (Audio Envelope):        100.0%
+2026-04-18 06:20:29,781 [INFO]   R3 (Combined Pass Rate):    90.02%
+2026-04-18 06:20:29,781 [INFO]   Pre-attack: min=400.0ms, mean=493.1ms
+2026-04-18 06:20:29,781 [INFO]   Tail silence: min=726.92ms, mean=1008.12ms
+2026-04-18 06:20:29,781 [INFO]   Passed: 4900, Failed: 543
+2026-04-18 06:20:29,781 [INFO] 
+  Failure Type Breakdown:
+2026-04-18 06:20:29,782 [INFO]     Type A (Alignment Shift):    244
+2026-04-18 06:20:29,782 [INFO]     Type B (Merge/Split):        0
+2026-04-18 06:20:29,782 [INFO]     Type C (Boundary Noise):     0
+2026-04-18 06:20:29,782 [INFO]     Type D (Whisper Error):       299
+2026-04-18 06:20:29,782 [INFO]     Type E (Script Mismatch):    0
+2026-04-18 06:20:29,782 [INFO]     Type F (Envelope Violation): 0
+2026-04-18 06:20:29,782 [INFO] 
+  Per-Script Breakdown:
+2026-04-18 06:20:29,782 [INFO]     Script_1: 918/951 (96.53%)
+2026-04-18 06:20:29,782 [INFO]     Script_2: 986/1308 (75.38%)
+2026-04-18 06:20:29,782 [INFO]     Script_3: 817/873 (93.59%)
+2026-04-18 06:20:29,782 [INFO]     Script_4: 906/998 (90.78%)
+2026-04-18 06:20:29,782 [INFO]     Script_5: 952/991 (96.06%)
+2026-04-18 06:20:29,782 [INFO]     Script_6: 321/322 (99.69%)
+2026-04-18 06:20:29,782 [INFO] ============================================================
+2026-04-18 06:20:29,782 [INFO] 
+*** REQUIREMENTS NOT MET — Stage 6 R&D iteration needed ***
+2026-04-18 06:20:29,782 [INFO]   Dominant failure: Type_D_whisper_error (299 segments)

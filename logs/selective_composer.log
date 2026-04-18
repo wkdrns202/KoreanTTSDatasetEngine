@@ -195,3 +195,209 @@ Stability reclassification:
 2026-04-17 18:01:21,473 [INFO]   REJECT: 271
 2026-04-17 18:01:21,473 [INFO]   Human review needed: 189
 2026-04-17 18:01:21,473 [INFO] ============================================================
+2026-04-17 22:42:16,700 [INFO] ============================================================
+2026-04-17 22:42:16,700 [INFO] Selective Data Composer — Stage 4.5
+2026-04-17 22:42:16,700 [INFO] ============================================================
+2026-04-17 22:42:16,706 [INFO] Loaded 4259 metadata entries
+2026-04-17 22:42:16,742 [INFO] Loaded 4199 evaluation results
+2026-04-17 22:42:16,742 [WARNING] Evaluation results lack unprompted scores — run evaluate_dataset.py with extended scoring first
+2026-04-17 22:42:16,744 [INFO] Discovered 29 recording sessions
+2026-04-17 22:42:16,744 [INFO] Computing AST baseline (per-session)...
+2026-04-17 22:42:52,180 [WARNING] Session Script_5_542-801: insufficient AST samples (1)
+2026-04-17 22:42:52,180 [INFO]   Script_1_1-122: AST mean=0.1542 s/char, std=0.0105, n=122
+2026-04-17 22:42:52,180 [INFO]   Script_1_123-220: AST mean=0.1492 s/char, std=0.0093, n=96
+2026-04-17 22:42:52,180 [INFO]   Script_1_221-300: AST mean=0.1556 s/char, std=0.0129, n=80
+2026-04-17 22:42:52,180 [INFO]   Script_2_1-162: AST mean=0.1662 s/char, std=0.0246, n=157
+2026-04-17 22:42:52,180 [INFO]   Script_2_1302-1416: AST mean=0.1597 s/char, std=0.0181, n=104
+2026-04-17 22:42:52,180 [INFO]   Script_2_163-473: AST mean=0.1761 s/char, std=0.0371, n=275
+2026-04-17 22:42:52,180 [INFO]   Script_2_474-547: AST mean=0.1766 s/char, std=0.0205, n=68
+2026-04-17 22:42:52,180 [INFO]   Script_2_548-891: AST mean=0.1714 s/char, std=0.0211, n=283
+2026-04-17 22:42:52,180 [INFO]   Script_2_892-1301: AST mean=0.1618 s/char, std=0.0202, n=347
+2026-04-17 22:42:52,181 [INFO]   Script_3_1-404: AST mean=0.1661 s/char, std=0.0137, n=404
+2026-04-17 22:42:52,181 [INFO]   Script_3_405-878: AST mean=0.1669 s/char, std=0.0146, n=461
+2026-04-17 22:42:52,181 [INFO]   Script_4_1-100: AST mean=0.1536 s/char, std=0.0089, n=97
+2026-04-17 22:42:52,181 [INFO]   Script_4_101-621: AST mean=0.1548 s/char, std=0.0124, n=516
+2026-04-17 22:42:52,181 [INFO]   Script_4_622-650: AST mean=0.1556 s/char, std=0.0137, n=29
+2026-04-17 22:42:52,181 [INFO]   Script_4_651-980: AST mean=0.1519 s/char, std=0.0117, n=324
+2026-04-17 22:42:52,181 [INFO]   Script_4_981-1005: AST mean=0.1494 s/char, std=0.0102, n=24
+2026-04-17 22:42:52,181 [INFO]   Script_5_1-43: AST mean=0.1676 s/char, std=0.0102, n=43
+2026-04-17 22:42:52,181 [INFO]   Script_5_201-541: AST mean=0.1656 s/char, std=0.0115, n=337
+2026-04-17 22:42:52,181 [INFO]   Script_5_44-200: AST mean=0.1681 s/char, std=0.0120, n=156
+2026-04-17 22:42:52,181 [INFO]   Script_5_542-800: AST mean=0.1703 s/char, std=0.0320, n=252
+2026-04-17 22:42:52,181 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-17 22:43:51,168 [INFO] Scored 4176 segments
+2026-04-17 22:43:51,326 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_scores.json
+2026-04-17 22:43:51,326 [INFO] Running composition decisions...
+2026-04-17 22:43:51,484 [INFO] Calibrated thresholds: ACCEPT >= 0.0420 (95% CI: 0.0402-0.0435), REJECT < 0.6500
+2026-04-17 22:43:59,137 [INFO] Composition CSV (4176 rows): G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_results.csv
+2026-04-17 22:43:59,141 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_report.json
+2026-04-17 22:43:59,143 [INFO] Pending pool (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\pending_pool.json
+2026-04-17 22:43:59,157 [INFO] Rejection log (287 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\rejection_log.json
+2026-04-17 22:43:59,157 [INFO] 
+============================================================
+2026-04-17 22:43:59,157 [INFO] COMPOSITION COMPLETE
+2026-04-17 22:43:59,157 [INFO]   Total segments: 4176
+2026-04-17 22:43:59,157 [INFO]   ACCEPT: 3889 (93.1%)
+2026-04-17 22:43:59,157 [INFO]   PENDING: 0
+2026-04-17 22:43:59,157 [INFO]   REJECT: 287
+2026-04-17 22:43:59,157 [INFO]   Human review needed: 189
+2026-04-17 22:43:59,157 [INFO]   ─── Audio Duration ───
+2026-04-17 22:43:59,157 [INFO]   Total audio:  8.38h (30166s)
+2026-04-17 22:43:59,158 [INFO]   ACCEPT audio: 7.66h (91.4%)
+2026-04-17 22:43:59,158 [INFO]   PENDING audio: 0.00h
+2026-04-17 22:43:59,158 [INFO]   REJECT audio: 0.72h
+2026-04-17 22:43:59,158 [INFO] ============================================================
+2026-04-18 01:21:07,541 [INFO] ============================================================
+2026-04-18 01:21:07,542 [INFO] Selective Data Composer — Stage 4.5
+2026-04-18 01:21:07,542 [INFO] ============================================================
+2026-04-18 01:21:07,548 [INFO] Loaded 5443 metadata entries
+2026-04-18 01:21:07,584 [INFO] Loaded 4199 evaluation results
+2026-04-18 01:21:07,584 [WARNING] Evaluation results lack unprompted scores — run evaluate_dataset.py with extended scoring first
+2026-04-18 01:21:07,585 [INFO] Discovered 29 recording sessions
+2026-04-18 01:21:07,585 [INFO] Computing AST baseline (per-session)...
+2026-04-18 01:21:27,426 [WARNING] Session Script_5_542-801: insufficient AST samples (1)
+2026-04-18 01:21:30,757 [INFO]   Script_1_1-122: AST mean=0.1520 s/char, std=0.0213, n=122
+2026-04-18 01:21:30,757 [INFO]   Script_1_123-220: AST mean=0.1472 s/char, std=0.0205, n=97
+2026-04-18 01:21:30,757 [INFO]   Script_1_221-300: AST mean=0.1527 s/char, std=0.0217, n=80
+2026-04-18 01:21:30,757 [INFO]   Script_1_301-737: AST mean=0.1529 s/char, std=0.0144, n=419
+2026-04-18 01:21:30,757 [INFO]   Script_1_738-984: AST mean=0.1526 s/char, std=0.0084, n=233
+2026-04-18 01:21:30,757 [INFO]   Script_2_1-162: AST mean=0.1410 s/char, std=0.0404, n=159
+2026-04-18 01:21:30,757 [INFO]   Script_2_1302-1416: AST mean=0.1579 s/char, std=0.0330, n=112
+2026-04-18 01:21:30,757 [INFO]   Script_2_163-473: AST mean=0.1435 s/char, std=0.0497, n=290
+2026-04-18 01:21:30,757 [INFO]   Script_2_474-547: AST mean=0.1558 s/char, std=0.0445, n=73
+2026-04-18 01:21:30,757 [INFO]   Script_2_548-891: AST mean=0.1600 s/char, std=0.0429, n=307
+2026-04-18 01:21:30,758 [INFO]   Script_2_892-1301: AST mean=0.1583 s/char, std=0.0371, n=367
+2026-04-18 01:21:30,758 [INFO]   Script_3_1-404: AST mean=0.1617 s/char, std=0.0304, n=404
+2026-04-18 01:21:30,758 [INFO]   Script_3_405-878: AST mean=0.1632 s/char, std=0.0270, n=469
+2026-04-18 01:21:30,758 [INFO]   Script_4_1-100: AST mean=0.1531 s/char, std=0.0154, n=98
+2026-04-18 01:21:30,758 [INFO]   Script_4_101-621: AST mean=0.1473 s/char, std=0.0326, n=519
+2026-04-18 01:21:30,758 [INFO]   Script_4_622-650: AST mean=0.1607 s/char, std=0.0145, n=29
+2026-04-18 01:21:30,758 [INFO]   Script_4_651-980: AST mean=0.1490 s/char, std=0.0282, n=328
+2026-04-18 01:21:30,758 [INFO]   Script_4_981-1005: AST mean=0.1525 s/char, std=0.0069, n=24
+2026-04-18 01:21:30,758 [INFO]   Script_5_1-43: AST mean=0.1687 s/char, std=0.0069, n=43
+2026-04-18 01:21:30,758 [INFO]   Script_5_201-541: AST mean=0.1645 s/char, std=0.0235, n=339
+2026-04-18 01:21:30,758 [INFO]   Script_5_44-200: AST mean=0.1644 s/char, std=0.0284, n=156
+2026-04-18 01:21:30,758 [INFO]   Script_5_542-800: AST mean=0.1673 s/char, std=0.0189, n=249
+2026-04-18 01:21:30,758 [INFO]   Script_5_802-1019: AST mean=0.1686 s/char, std=0.0131, n=203
+2026-04-18 01:21:30,758 [INFO]   Script_6_1-62: AST mean=0.1664 s/char, std=0.0075, n=62
+2026-04-18 01:21:30,758 [INFO]   Script_6_143-159: AST mean=0.1652 s/char, std=0.0071, n=17
+2026-04-18 01:21:30,758 [INFO]   Script_6_160-330: AST mean=0.1659 s/char, std=0.0079, n=168
+2026-04-18 01:21:30,758 [INFO]   Script_6_63-142: AST mean=0.1666 s/char, std=0.0081, n=75
+2026-04-18 01:21:30,758 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-18 01:21:58,484 [INFO] ============================================================
+2026-04-18 01:21:58,484 [INFO] Selective Data Composer — Stage 4.5
+2026-04-18 01:21:58,484 [INFO] ============================================================
+2026-04-18 01:21:58,490 [INFO] Loaded 5443 metadata entries
+2026-04-18 01:21:58,516 [INFO] Loaded 4199 evaluation results
+2026-04-18 01:21:58,516 [WARNING] Evaluation results lack unprompted scores — run evaluate_dataset.py with extended scoring first
+2026-04-18 01:21:58,517 [INFO] Discovered 29 recording sessions
+2026-04-18 01:21:58,517 [INFO] Computing AST baseline (per-session)...
+2026-04-18 01:22:18,544 [WARNING] Session Script_5_542-801: insufficient AST samples (1)
+2026-04-18 01:22:21,762 [INFO]   Script_1_1-122: AST mean=0.1520 s/char, std=0.0213, n=122
+2026-04-18 01:22:21,762 [INFO]   Script_1_123-220: AST mean=0.1472 s/char, std=0.0205, n=97
+2026-04-18 01:22:21,762 [INFO]   Script_1_221-300: AST mean=0.1527 s/char, std=0.0217, n=80
+2026-04-18 01:22:21,762 [INFO]   Script_1_301-737: AST mean=0.1529 s/char, std=0.0144, n=419
+2026-04-18 01:22:21,762 [INFO]   Script_1_738-984: AST mean=0.1526 s/char, std=0.0084, n=233
+2026-04-18 01:22:21,762 [INFO]   Script_2_1-162: AST mean=0.1410 s/char, std=0.0404, n=159
+2026-04-18 01:22:21,762 [INFO]   Script_2_1302-1416: AST mean=0.1579 s/char, std=0.0330, n=112
+2026-04-18 01:22:21,762 [INFO]   Script_2_163-473: AST mean=0.1435 s/char, std=0.0497, n=290
+2026-04-18 01:22:21,762 [INFO]   Script_2_474-547: AST mean=0.1558 s/char, std=0.0445, n=73
+2026-04-18 01:22:21,762 [INFO]   Script_2_548-891: AST mean=0.1600 s/char, std=0.0429, n=307
+2026-04-18 01:22:21,763 [INFO]   Script_2_892-1301: AST mean=0.1583 s/char, std=0.0371, n=367
+2026-04-18 01:22:21,763 [INFO]   Script_3_1-404: AST mean=0.1617 s/char, std=0.0304, n=404
+2026-04-18 01:22:21,763 [INFO]   Script_3_405-878: AST mean=0.1632 s/char, std=0.0270, n=469
+2026-04-18 01:22:21,763 [INFO]   Script_4_1-100: AST mean=0.1531 s/char, std=0.0154, n=98
+2026-04-18 01:22:21,763 [INFO]   Script_4_101-621: AST mean=0.1473 s/char, std=0.0326, n=519
+2026-04-18 01:22:21,763 [INFO]   Script_4_622-650: AST mean=0.1607 s/char, std=0.0145, n=29
+2026-04-18 01:22:21,763 [INFO]   Script_4_651-980: AST mean=0.1490 s/char, std=0.0282, n=328
+2026-04-18 01:22:21,763 [INFO]   Script_4_981-1005: AST mean=0.1525 s/char, std=0.0069, n=24
+2026-04-18 01:22:21,763 [INFO]   Script_5_1-43: AST mean=0.1687 s/char, std=0.0069, n=43
+2026-04-18 01:22:21,763 [INFO]   Script_5_201-541: AST mean=0.1645 s/char, std=0.0235, n=339
+2026-04-18 01:22:21,763 [INFO]   Script_5_44-200: AST mean=0.1644 s/char, std=0.0284, n=156
+2026-04-18 01:22:21,763 [INFO]   Script_5_542-800: AST mean=0.1673 s/char, std=0.0189, n=249
+2026-04-18 01:22:21,763 [INFO]   Script_5_802-1019: AST mean=0.1686 s/char, std=0.0131, n=203
+2026-04-18 01:22:21,763 [INFO]   Script_6_1-62: AST mean=0.1664 s/char, std=0.0075, n=62
+2026-04-18 01:22:21,763 [INFO]   Script_6_143-159: AST mean=0.1652 s/char, std=0.0071, n=17
+2026-04-18 01:22:21,763 [INFO]   Script_6_160-330: AST mean=0.1659 s/char, std=0.0079, n=168
+2026-04-18 01:22:21,763 [INFO]   Script_6_63-142: AST mean=0.1666 s/char, std=0.0081, n=75
+2026-04-18 01:22:21,763 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-18 01:23:40,171 [INFO] Scored 5443 segments
+2026-04-18 01:23:40,354 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_scores.json
+2026-04-18 01:23:40,354 [INFO] Running composition decisions...
+2026-04-18 01:23:40,615 [INFO] Calibrated thresholds: ACCEPT >= 0.0501 (95% CI: 0.0497-0.0502), REJECT < 0.8389
+2026-04-18 01:23:58,076 [INFO] Composition CSV (5443 rows): G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_results.csv
+2026-04-18 01:23:58,079 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_report.json
+2026-04-18 01:23:58,081 [INFO] Pending pool (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\pending_pool.json
+2026-04-18 01:23:58,095 [INFO] Rejection log (266 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\rejection_log.json
+2026-04-18 01:23:58,095 [INFO] 
+============================================================
+2026-04-18 01:23:58,095 [INFO] COMPOSITION COMPLETE
+2026-04-18 01:23:58,095 [INFO]   Total segments: 5443
+2026-04-18 01:23:58,095 [INFO]   ACCEPT: 5177 (95.1%)
+2026-04-18 01:23:58,095 [INFO]   PENDING: 0
+2026-04-18 01:23:58,095 [INFO]   REJECT: 266
+2026-04-18 01:23:58,095 [INFO]   Human review needed: 281
+2026-04-18 01:23:58,095 [INFO]   ─── Audio Duration ───
+2026-04-18 01:23:58,095 [INFO]   Total audio:  8.42h (30296s)
+2026-04-18 01:23:58,095 [INFO]   ACCEPT audio: 7.99h (94.9%)
+2026-04-18 01:23:58,095 [INFO]   PENDING audio: 0.00h
+2026-04-18 01:23:58,095 [INFO]   REJECT audio: 0.43h
+2026-04-18 01:23:58,096 [INFO] ============================================================
+2026-04-18 06:20:46,474 [INFO] ============================================================
+2026-04-18 06:20:46,475 [INFO] Selective Data Composer — Stage 4.5
+2026-04-18 06:20:46,475 [INFO] ============================================================
+2026-04-18 06:20:46,482 [INFO] Loaded 5443 metadata entries
+2026-04-18 06:20:46,533 [INFO] Loaded 5443 evaluation results
+2026-04-18 06:20:46,535 [INFO] Discovered 29 recording sessions
+2026-04-18 06:20:46,535 [INFO] Computing AST baseline (per-session)...
+2026-04-18 06:21:18,047 [WARNING] Session Script_5_542-801: insufficient AST samples (1)
+2026-04-18 06:21:21,277 [INFO]   Script_1_1-122: AST mean=0.1520 s/char, std=0.0213, n=122
+2026-04-18 06:21:21,277 [INFO]   Script_1_123-220: AST mean=0.1472 s/char, std=0.0205, n=97
+2026-04-18 06:21:21,277 [INFO]   Script_1_221-300: AST mean=0.1527 s/char, std=0.0217, n=80
+2026-04-18 06:21:21,277 [INFO]   Script_1_301-737: AST mean=0.1529 s/char, std=0.0144, n=419
+2026-04-18 06:21:21,277 [INFO]   Script_1_738-984: AST mean=0.1526 s/char, std=0.0084, n=233
+2026-04-18 06:21:21,277 [INFO]   Script_2_1-162: AST mean=0.1410 s/char, std=0.0404, n=159
+2026-04-18 06:21:21,277 [INFO]   Script_2_1302-1416: AST mean=0.1579 s/char, std=0.0330, n=112
+2026-04-18 06:21:21,277 [INFO]   Script_2_163-473: AST mean=0.1435 s/char, std=0.0497, n=290
+2026-04-18 06:21:21,278 [INFO]   Script_2_474-547: AST mean=0.1558 s/char, std=0.0445, n=73
+2026-04-18 06:21:21,278 [INFO]   Script_2_548-891: AST mean=0.1600 s/char, std=0.0429, n=307
+2026-04-18 06:21:21,278 [INFO]   Script_2_892-1301: AST mean=0.1583 s/char, std=0.0371, n=367
+2026-04-18 06:21:21,278 [INFO]   Script_3_1-404: AST mean=0.1617 s/char, std=0.0304, n=404
+2026-04-18 06:21:21,278 [INFO]   Script_3_405-878: AST mean=0.1632 s/char, std=0.0270, n=469
+2026-04-18 06:21:21,278 [INFO]   Script_4_1-100: AST mean=0.1531 s/char, std=0.0154, n=98
+2026-04-18 06:21:21,278 [INFO]   Script_4_101-621: AST mean=0.1473 s/char, std=0.0326, n=519
+2026-04-18 06:21:21,278 [INFO]   Script_4_622-650: AST mean=0.1607 s/char, std=0.0145, n=29
+2026-04-18 06:21:21,278 [INFO]   Script_4_651-980: AST mean=0.1490 s/char, std=0.0282, n=328
+2026-04-18 06:21:21,278 [INFO]   Script_4_981-1005: AST mean=0.1525 s/char, std=0.0069, n=24
+2026-04-18 06:21:21,278 [INFO]   Script_5_1-43: AST mean=0.1687 s/char, std=0.0069, n=43
+2026-04-18 06:21:21,278 [INFO]   Script_5_201-541: AST mean=0.1645 s/char, std=0.0235, n=339
+2026-04-18 06:21:21,278 [INFO]   Script_5_44-200: AST mean=0.1644 s/char, std=0.0284, n=156
+2026-04-18 06:21:21,278 [INFO]   Script_5_542-800: AST mean=0.1673 s/char, std=0.0189, n=249
+2026-04-18 06:21:21,278 [INFO]   Script_5_802-1019: AST mean=0.1686 s/char, std=0.0131, n=203
+2026-04-18 06:21:21,278 [INFO]   Script_6_1-62: AST mean=0.1664 s/char, std=0.0075, n=62
+2026-04-18 06:21:21,278 [INFO]   Script_6_143-159: AST mean=0.1652 s/char, std=0.0071, n=17
+2026-04-18 06:21:21,278 [INFO]   Script_6_160-330: AST mean=0.1659 s/char, std=0.0079, n=168
+2026-04-18 06:21:21,279 [INFO]   Script_6_63-142: AST mean=0.1666 s/char, std=0.0081, n=75
+2026-04-18 06:21:21,279 [INFO] Scoring all segments (D1-D4, D6-D7)...
+2026-04-18 06:22:40,969 [INFO] Scored 5443 segments
+2026-04-18 06:22:41,144 [INFO] Scores saved to G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_scores.json
+2026-04-18 06:22:41,144 [INFO] Running composition decisions...
+2026-04-18 06:22:41,383 [INFO] Calibrated thresholds: ACCEPT >= 0.6441 (95% CI: 0.0542-0.7386), REJECT < 0.8325
+2026-04-18 06:22:58,320 [INFO] Composition CSV (5443 rows): G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_results.csv
+2026-04-18 06:22:58,324 [INFO] Composition report: G:\Projects\AI_Research\TTSDataSetCleanser\logs\composition_report.json
+2026-04-18 06:22:58,326 [INFO] Pending pool (0 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\pending_pool.json
+2026-04-18 06:22:58,354 [INFO] Rejection log (650 items): G:\Projects\AI_Research\TTSDataSetCleanser\logs\rejection_log.json
+2026-04-18 06:22:58,354 [INFO] 
+============================================================
+2026-04-18 06:22:58,354 [INFO] COMPOSITION COMPLETE
+2026-04-18 06:22:58,354 [INFO]   Total segments: 5443
+2026-04-18 06:22:58,354 [INFO]   ACCEPT: 4793 (88.1%)
+2026-04-18 06:22:58,354 [INFO]   PENDING: 0
+2026-04-18 06:22:58,354 [INFO]   REJECT: 650
+2026-04-18 06:22:58,354 [INFO]   Human review needed: 281
+2026-04-18 06:22:58,354 [INFO]   ─── Audio Duration ───
+2026-04-18 06:22:58,355 [INFO]   Total audio:  8.42h (30296s)
+2026-04-18 06:22:58,355 [INFO]   ACCEPT audio: 7.16h (85.1%)
+2026-04-18 06:22:58,355 [INFO]   PENDING audio: 0.00h
+2026-04-18 06:22:58,355 [INFO]   REJECT audio: 1.25h
+2026-04-18 06:22:58,355 [INFO] ============================================================

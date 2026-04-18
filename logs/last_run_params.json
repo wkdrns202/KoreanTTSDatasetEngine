@@ -1,21 +1,25 @@
 {
-  "timestamp": "2026-04-04T09:43:01.833511",
+  "timestamp": "2026-04-18T00:52:50.854269",
   "whisper_model": "medium",
-  "device": "cpu",
+  "device": "cuda",
   "search_window": 25,
   "skip_penalty": 0.01,
   "match_threshold": 0.5,
   "consec_fail_limit": 10,
-  "audio_pad_ms": 50,
+  "audio_pad_ms": 320,
   "min_gap_for_pad_ms": 30,
-  "fade_ms": 10,
-  "total_target_lines": 162,
-  "total_matched": 158,
-  "total_skipped": 3,
-  "match_rate": 97.53,
-  "script_filter": 2,
-  "range_filter": [
+  "fade_ms": 3,
+  "total_target_lines": 4222,
+  "total_matched": 4033,
+  "total_skipped": 189,
+  "match_rate": 95.52,
+  "script_filter": [
     1,
-    162
-  ]
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "range_filter": null
 }
