@@ -78,6 +78,72 @@ POSTSPEECH_PAD_MS = 700
 - Metadata: `datasets/rerun_excl_part2/script.txt`
 - Pipeline report: `TaskLogs/20260417_230005_pipeline_report.txt`
 
-## Next Step
+## Stage 4.5 Results (v1 — HEAD gradient 활성 상태)
 
-Stage 4.5 (selective_composer) — D1-D9 9-dimension quality scoring on the integrated 5,443 WAVs.
+| 항목 | 값 |
+|------|-----|
+| ACCEPT | 4,793 (88.1%) |
+| REJECT | 650 |
+| PENDING | 0 (calibration 역전으로 소멸) |
+| ACCEPT 오디오 | 9.70h |
+| tau_accept | 0.6441 |
+| tau_reject | 0.8325 (역전) |
+
+### Reject 원인 분석
+
+| 원인 | 건수 |
+|------|------|
+| hard_reject:S_unprompted | 262 |
+| S_decay < 0.5 (기하평균 추락) | 409 |
+| - D9만 문제 (다른 차원 OK) | 295 |
+| - D9 + 다른 이슈 | 114 |
+| AST_anomaly_fast | 209 |
+| formal_ending_truncation_risk | 35 |
+
+## Lessons Learned
+
+### 1. D9 HEAD gradient 대량 오탐
+
+**증상**: S_decay=0.0인 409건 중 상당수가 TAIL이 아닌 **HEAD gradient** 때문에 reject.
+
+**원인**: HEAD scan이 first_signal에서 730ms 전방까지 스캔하여, speech 본문 내부의 자연 에너지 변동(단어 간 pause 후 재개)을 cliff truncation으로 오탐. 예: Script_1_0091.wav — 본문 1000ms 지점에서 -120dB→-49.9dB 전환(14.01 dB/ms)이 cliff로 판정됨.
+
+**근본 문제**: 음성 onset은 무음→발화 전환이므로 급격한 positive gradient가 자연스러운 현상. HEAD gradient 검출 자체가 부적합.
+
+**해결**: D9 HEAD gradient 비활성화 (v2). Head 잘림은 Stage 2의 ONSET_SAFETY_MS=320 + PRESPEECH_PAD=100(합계 420ms)이 이미 방지.
+
+### 2. D8 S_continuity 610ms gap 미감지
+
+Script_1_0066.wav: 610ms gap 뒤 이웃 문장 혼입(-25dB speech 재등장). CONTINUITY_GAP_MS=730ms 기준에 미달하여 S_continuity=1.0으로 통과. D9가 부수적으로 감지(body_end≈last_signal → span=0). 향후 gap threshold 하향 검토 필요.
+
+### 3. Calibration 역전 (PENDING 소멸)
+
+tau_accept(0.6441) < tau_reject(0.8325) → PENDING 구간 없음. known_bad의 composite가 높아서(unprompted만 낮고 나머지 OK) 역전 발생. 역전 방지 guard 추가 필요.
+
+### 4. evaluate_dataset 선행 필수
+
+Stage 4.5를 evaluate 없이 돌리면 D1/D6이 기본값 0.5 → calibration 비정상(tau_accept=0.0501) → 사실상 필터 미작동. **반드시 evaluate → composer 순서 준수.**
+
+## Stage 4.5 Results (v2 — HEAD gradient 비활성화)
+
+| 항목 | v1 | v2 | 변화 |
+|------|-----|-----|------|
+| tau_accept | 0.6441 | **0.7441** | threshold 정상화 |
+| tau_reject | 0.8325 | 0.8395 | |
+| ACCEPT | 4,793 (88.1%) | **4,786 (87.9%)** | -7 |
+| REJECT | 650 | 657 | +7 |
+| D9 rejects | 409 | **395** | -14 복구 |
+| D9-only rejects | 295 | **285** | -10 복구 |
+| ACCEPT 오디오 | 9.70h | 9.69h | |
+
+HEAD 비활성화로 D9 오탐 14건 복구, threshold 0.10 상승으로 일부 상쇄.
+핵심 개선: calibration threshold 정상화 (0.6441 → 0.7441).
+
+## Output
+
+- Directory: `datasets/rerun_excl_part2/`
+- WAVs: `datasets/rerun_excl_part2/wavs/`
+- Metadata: `datasets/rerun_excl_part2/script.txt`
+- Pipeline report: `TaskLogs/20260417_230005_pipeline_report.txt`
+- Composition v1: `logs/composition_results_v1.csv` (HEAD 활성)
+- Composition v2: `logs/composition_results.csv` (HEAD 비활성, 최신)

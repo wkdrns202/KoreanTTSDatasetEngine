@@ -734,17 +734,19 @@ def compute_decay_score(samples, sr):
                              scan_windows=scan_windows, direction='backward',
                              **shared)
 
-    # Step 5: HEAD score — forward from first_signal.
-    #   Skips zero-fill region because first_signal is AFTER the zeros.
-    #   HEAD uses span=None to disable span scoring: Korean stops/affricates
-    #   naturally jump from silence to -40dB in one window (span=0), which
-    #   is normal, not truncation. Only gradient matters for onset quality.
-    head_score = _score_edge(db, anchor=first_signal, body_ref=None,
-                             scan_windows=scan_windows, direction='forward',
-                             **shared)
+    # Step 5: HEAD score — DISABLED (2026-04-18).
+    #   HEAD gradient detection is counterproductive: speech onset naturally
+    #   has steep positive gradients (silence → voice), and the 730ms scan
+    #   range extends deep into speech body, catching normal inter-word
+    #   energy fluctuations as false "cliff" detections.  Head truncation
+    #   is already prevented by ONSET_SAFETY_MS=320 + PRESPEECH_PAD_MS=100
+    #   in Stage 2 (total 420ms margin before speech).
+    # head_score = _score_edge(db, anchor=first_signal, body_ref=None,
+    #                          scan_windows=scan_windows, direction='forward',
+    #                          **shared)
 
-    # Step 6: Final = min(head, tail). Both edges must be natural.
-    return min(head_score, tail_score)
+    # Step 6: TAIL only.
+    return tail_score
 
 
 # ============================================================

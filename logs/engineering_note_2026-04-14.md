@@ -1894,4 +1894,123 @@ for each script_line:
 
 - **원칙 20**: Multi-parameter sweep 설계 시 각 dimension의 물리적 의미와 **상류 파이프라인 제약**을 반드시 확인. "threshold 변형 → robust한 게 좋다"는 단순 논리는 위험.
 - **원칙 21**: 단일 모델 의존 구조에서 robustness를 높이려면, 같은 모델의 파라미터 변형보다 **다른 아키텍처 모델의 독립 판단**이 더 유효한 다양성을 제공한다.
+- **원칙 22**: D9 HEAD gradient 검출은 비활성화. 음성 onset은 무음→발화 전환이므로 급격한 기울기가 **자연스러운 현상**. 730ms scan이 본문 내부 에너지 변동까지 잡아 대량 오탐 유발. Head 잘림은 Stage 2 ONSET_SAFETY_MS=320 + PRESPEECH_PAD=100이 이미 해결.
+
+---
+
+# [APPEND #10] 2026-04-18 — D9 HEAD Gradient 비활성화
+
+## 1. 문제 발견
+
+Script_1_0091.wav 수동 분석에서 TAIL span=155ms(score=1.0)임에도 S_decay=0.0.
+원인은 **HEAD gradient score가 0.0**이었음.
+
+## 2. 근본 원인
+
+HEAD scan이 first_signal(w20)에서 **730ms 전방까지** 스캔. 이 범위가 speech 본문 내부까지 도달하여, **단어 사이 자연 에너지 변동**(pause 후 재개, -120dB→-49.9dB = 14.01 dB/ms)을 cliff truncation으로 오탐.
+
+```
+w120 (file 1000ms): -120.0dB → -49.9dB  gradient = 14.01 dB/ms
+DECAY_CLIFF_GRAD = 10.0 dB/ms → grad_score = 0.0
+```
+
+이건 본문 중간의 자연스러운 발화 재개이지 onset truncation이 아님.
+
+## 3. HEAD gradient 검출이 근본적으로 부적합한 이유
+
+1. **음성 onset은 무음→발화 전환** — 급격한 positive gradient가 **정상**
+2. 한국어 경음/폐쇄음은 한 window에서 silence→-40dB 점프 — 자연스러운 현상
+3. **730ms scan 범위**가 speech body 깊숙이까지 도달하여 inter-word pause 복귀를 잡음
+4. span_score=None으로 disable했지만 **gradient score가 살아있었음** → 대량 오탐
+
+## 4. HEAD 잘림 보호는 이미 해결됨
+
+Stage 2에서:
+- ONSET_SAFETY_MS = 320ms (voice onset 앞 320ms pullback)
+- PRESPEECH_PAD_MS = 100ms (zero-fill)
+- 합계 420ms margin → head truncation 근본 방지
+
+D9에서 HEAD를 이중으로 검사할 필요 없음.
+
+## 5. 적용
+
+`selective_composer.py` `compute_decay_score()`:
+- HEAD score 계산 주석 처리
+- `return min(head_score, tail_score)` → `return tail_score`
+- TAIL 분석만 유지
+
+## 6. 예상 영향
+
+HEAD gradient 0.0 때문에 S_decay=0.0이 된 파일들이 TAIL 기준으로 재평가됨.
+295건(D9만 문제) 중 상당수가 HEAD 오탐이었을 것으로 추정 → ACCEPT 복구 기대.
+정확한 수치는 Stage 4.5 재실행 후 확인.
+
+---
+
+# [APPEND #11] 2026-04-19 — Bimodal Offset 확장: 자연 감쇠 보존
+
+## 1. 상황
+
+v2(HEAD 비활성화) 이후에도 285건이 D9-only reject으로 잔존. 274건(96%)이 POSTSPEECH_PAD 부족(중앙값 20ms, 700ms 필요). Script_2가 155건(54%)으로 집중.
+
+Script_2_0877.wav 심층 분석:
+- **raw 데이터**: body→signal 180ms, 자연 감쇠 충분 → R6 붙이면 D9=1.0
+- **파이프라인 WAV**: body→signal 15ms, D9=0.125 → REJECT
+
+## 2. 핵심 문제
+
+Stage 2 `find_voice_onset_offset()` 내부의 **bimodal detector**가 이웃 문장을 차단할 때 offset을 첫 cluster의 **body_end(-40dB)**에서 잘랐음. 이웃 문장 제거에는 성공했지만, 본문의 자연 감쇠(-40dB → -68dB 전이 구간)까지 함께 희생.
+
+```
+본문 speech ─── body_end(-40dB) ─── 자연 감쇠 ─── 무음 ─── 이웃 문장
+                      ↑ 여기서 잘림 (기존)
+                                              ↑ 여기까지 보존해야 함 (수정)
+```
+
+**원인 체인**:
+1. Whisper segment end가 이웃 문장을 포함
+2. Stage 1 chunk에 이웃 문장 포함
+3. Stage 2 bimodal detector가 body_end에서 hard cut
+4. 자연 감쇠 손실 → POSTSPEECH_PAD 부족 → D9 span ≈ 0 → reject
+
+## 3. 해결
+
+`find_voice_onset_offset()` bimodal 분기에서 offset을 body_end가 아닌, **body_end + min(다음 cluster까지 거리, 730ms)**로 확장.
+
+```python
+# 기존
+bimodal_offset = int(body_windows[split_points[0]])
+
+# 수정
+first_cluster_body_end = int(body_windows[split_points[0]])
+next_cluster_start = int(body_windows[split_points[0] + 1])
+gap_to_next = next_cluster_start - first_cluster_body_end
+max_extend = min(gap_to_next, silence_windows_needed)  # cap at 730ms
+bimodal_offset = first_cluster_body_end + max_extend
+```
+
+**설계 원칙**: 이웃 문장 차단은 유지하면서, 본문과 이웃 문장 사이의 자연 감쇠 + 무음 구간을 최대한 보존.
+
+## 4. 결과 (Script_2_0877 단건 검증)
+
+| 항목 | 수정 전 | 수정 후 |
+|------|---------|---------|
+| Duration | 8.760s | 9.340s (+580ms) |
+| D9 S_decay | 0.125 | **1.0** |
+| Span | 15ms | **140ms** |
+| Post-body | 25ms | **605ms** |
+
+이웃 문장 차단 유지, 자연 감쇠 보존, D9 만점.
+
+## 5. 영향도 분석
+
+| 항목 | 영향 | 이유 |
+|------|------|------|
+| D4 AST | 없음 | body_start~body_end(-40dB)만 사용, 확장분은 -40dB 미만 |
+| Step 3.6 tail-trim | 긍정적 | voiced가 길어져 700ms 보존 가능 |
+| Step 4 fade | 없음 | voiced 끝 30ms 위치만 이동 |
+| D8 continuity | 없음 | 자연 감쇠는 gap 생성 안 함 |
+| 통계적 균일성 | 없음 | AST 계산 구간 불변 |
+
+- **원칙 23 (신규)**: bimodal detector가 이웃 문장을 차단할 때, offset은 body_end가 아닌 **첫 cluster signal 감쇠 끝까지 확장**하여 자연 tail을 보존한다. 이웃 문장 차단과 자연 감쇠 보존은 양립 가능.
 

@@ -415,7 +415,15 @@ def find_voice_onset_offset(samples, sr=48000, threshold_db=SILENCE_THRESHOLD_DB
         if len(split_points) > 0:
             # First cluster ends at body_windows[split_points[0]]; there is
             # at least one body window after the gap — confirmed bimodal.
-            bimodal_offset = int(body_windows[split_points[0]])
+            first_cluster_body_end = int(body_windows[split_points[0]])
+            next_cluster_start = int(body_windows[split_points[0] + 1])
+            # (2026-04-19) Extend offset past body_end to preserve natural
+            # decay (-40dB → -68dB transition). Cap at the lesser of:
+            #   - distance to next cluster start (prevent bleed)
+            #   - sustained_silence_ms / window_ms (design ceiling = 730ms)
+            gap_to_next = next_cluster_start - first_cluster_body_end
+            max_extend = min(gap_to_next, silence_windows_needed)
+            bimodal_offset = first_cluster_body_end + max_extend
 
     if bimodal_offset is not None:
         candidate_offset = bimodal_offset
